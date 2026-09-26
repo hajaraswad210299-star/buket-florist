@@ -2,14 +2,16 @@ import {
   asset,
   favorites,
   favoriteTabs,
-  stores,
-  brandLogos,
 } from "@/components/figmaAssets";
 import Navbar from "@/components/site/Navbar";
 import Reveal from "@/components/site/Reveal";
 import Footer from "@/components/site/Footer";
 import WhatsappFab from "@/components/site/WhatsappFab";
 import FigmaIcon from "@/components/site/FigmaIcon";
+import CountUp from "@/components/site/CountUp";
+import TestimonialCarousel from "@/components/site/TestimonialCarousel";
+import StoreLocations from "@/components/site/StoreLocations";
+import BrandMarquee from "@/components/site/BrandMarquee";
 import type { ComponentProps, ReactNode } from "react";
 
 type IconName = ComponentProps<typeof FigmaIcon>["name"];
@@ -88,7 +90,7 @@ function StatCard({ num, label, icon }: (typeof statCards)[number]) {
         <FigmaIcon name={icon} className="size-[32px]" />
       </div>
       <div className="flex flex-col font-medium items-start text-[#3f425a]">
-        <p className="leading-[1.2] text-[28px] tracking-[-0.56px] whitespace-nowrap">{num}</p>
+        <p className="leading-[1.2] text-[28px] tracking-[-0.56px] whitespace-nowrap"><CountUp value={Number(num.replace(/\D/g, ""))} /></p>
         <p className="leading-[1.35] text-[12px] tracking-[-0.12px] whitespace-nowrap">{label}</p>
       </div>
     </div>
@@ -105,7 +107,7 @@ function MiniStats() {
           <img alt="" className="size-[44px]" height={44} width={44} src={asset.ellipse3} />
         </div>
         <div className="flex flex-col items-start">
-          <p className="font-semibold leading-[1.35] text-[#3f425a] text-[20px] whitespace-nowrap">200rb+</p>
+          <p className="font-semibold leading-[1.35] text-[#3f425a] text-[20px] whitespace-nowrap"><CountUp value={200} suffix="rb+" /></p>
           <div className="flex gap-[4px] items-center">
             <img alt="" className="size-[14px]" src={asset.star} />
             <p className="font-medium leading-[1.35] text-[#3f425a] text-[12px] whitespace-nowrap">4.9 Rating</p>
@@ -117,7 +119,7 @@ function MiniStats() {
           <FigmaIcon name="heart" className="size-[20px]" />
         </div>
         <div className="flex flex-col items-start leading-[1.35] text-[#3f425a] whitespace-nowrap">
-          <p className="font-semibold text-[20px]">940+</p>
+          <p className="font-semibold text-[20px]"><CountUp value={940} /></p>
           <p className="font-medium text-[12px]">Happy customer</p>
         </div>
       </div>
@@ -321,108 +323,12 @@ export default function HomePage() {
             <h2 className="font-ivy font-semibold leading-[1.2] text-[#3f425a] text-[30px] sm:text-[36px] lg:text-[40px]">Cerita Mereka</h2>
           </Reveal>
 
-          <div className="flex flex-col gap-[46px] w-full">
-            {/* ---- filmstrip: full-bleed centrepiece flanked by thumbnails (xl+) ---- */}
-            <div className="hidden xl:flex gap-[24px] items-end justify-center w-full">
-              <div className="flex gap-[24px] items-start shrink-0">
-              <img alt="" className="h-[152px] w-[204px] object-cover shrink-0" src={asset.image6} />
-              <img alt="" className="h-[152px] w-[204px] object-cover shrink-0" src={asset.image13} />
-              <Reveal className="flex gap-[40px] items-stretch shrink-0 w-[800px]">
-                <img alt="" className="h-[351px] w-[296px] object-cover shrink-0" src={asset.image8} />
-                <div className="flex flex-col justify-between flex-1 h-[351px]">
-                  <p className="font-normal leading-[1.5] text-[#3c3e3e] text-[28px] tracking-[-0.84px]">
-                    Bunganya bagus banget, pas sampai masih fresh dan penataannya juga rapi. Yang paling suka itu warnanya ternyata lebih cantik dari yang saya bayangkan.
-                  </p>
-                  <div className="flex flex-col gap-[6px] leading-[1.2] h-[60px] justify-center">
-                    <p className="font-medium text-[#1d211d] text-[20px] tracking-[-0.6px]">Alya Prameswari</p>
-                    <p className="font-normal text-[#879687] text-[16px] tracking-[-0.48px]">Marketing Manager</p>
-                  </div>
-                </div>
-              </Reveal>
-              </div>
-              <div className="flex gap-[24px] items-center shrink-0">
-                <img alt="" className="h-[152px] w-[204px] object-cover shrink-0" src={asset.image11} />
-                <img alt="" className="h-[152px] w-[204px] object-cover shrink-0" src={asset.image7} />
-              </div>
-            </div>
-
-            {/* ---- stacked layout (< xl) ---- */}
-            <Reveal className="xl:hidden flex flex-col md:flex-row gap-[24px] md:gap-[40px] items-stretch w-full max-w-[760px]">
-              <div className="relative w-full md:w-[296px] shrink-0 overflow-hidden h-[320px] md:h-[380px]">
-                <img alt="" className="absolute inset-0 size-full object-cover" src={asset.image8} />
-              </div>
-              <div className="flex flex-1 flex-col justify-between min-w-px gap-6 md:h-[380px]">
-                <p className="font-normal leading-[1.5] text-[#3c3e3e] text-[20px] sm:text-[22px] tracking-[-0.6px]">
-                  Bunganya bagus banget, pas sampai masih fresh dan penataannya juga rapi. Yang paling suka itu warnanya ternyata lebih cantik dari yang saya bayangkan.
-                </p>
-                <div className="flex flex-col gap-[6px] leading-[1.2]">
-                  <p className="font-medium text-[#1d211d] text-[18px] lg:text-[20px] tracking-[-0.6px]">Alya Prameswari</p>
-                  <p className="font-normal text-[#879687] text-[15px] lg:text-[16px] tracking-[-0.48px]">Marketing Manager</p>
-                </div>
-              </div>
-            </Reveal>
-
-            {/* ---- nav ---- */}
-            <div className="flex gap-[12px] items-center w-full">
-              <button className="group flex items-center gap-[10px]">
-                <FigmaIcon name="previous" className="size-[24px]" />
-                <span className="font-medium leading-[1.2] text-[#cbcccd] text-[16px] tracking-[-0.48px] transition-colors group-hover:text-[#7a70ba]">Prev</span>
-              </button>
-              <div className="flex flex-1 items-center justify-center gap-[8px] px-1 sm:px-[40px]">
-                <span className="size-[12px] rounded-full bg-[#d8d5ea]" />
-                <span className="bg-[#7a70ba] h-[12px] rounded-[90px] w-[30px]" />
-                <span className="size-[12px] rounded-full bg-[#d8d5ea]" />
-                <span className="size-[12px] rounded-full bg-[#d8d5ea]" />
-                <span className="size-[12px] rounded-full bg-[#d8d5ea]" />
-                <span className="size-[12px] rounded-full bg-[#d8d5ea]" />
-              </div>
-              <button className="group flex items-center gap-[10px]">
-                <span className="font-medium leading-[1.2] text-[#8d9091] text-[16px] tracking-[-0.48px]">Next</span>
-                <img alt="" src={asset.arrowRight3} className="h-[12px] w-[19.555px] -scale-x-100 transition-transform duration-300 group-hover:translate-x-1" />
-              </button>
-            </div>
-          </div>
+          <TestimonialCarousel />
         </Container>
       </section>
 
       {/* ======================== STORES ======================== */}
-      <section id="stores" className="w-full bg-[#f3f2f7]">
-        <Container className="flex flex-col gap-[40px] lg:gap-[60px] items-start px-5 md:px-10 lg:px-[60px] py-[56px] lg:py-[100px]">
-          <Reveal className="flex flex-col sm:flex-row gap-[16px] sm:items-center justify-center w-full">
-            <div className="flex flex-1 flex-col gap-[4px] items-start min-w-px">
-              <p className="font-medium leading-[1.35] text-[#696f96] text-[16px] lg:text-[20px]">Toko Kami</p>
-              <h2 className="font-ivy font-semibold leading-[1.2] text-[#3f425a] text-[28px] sm:text-[34px] lg:text-[40px]">Cari Berdasarkan Toko Terdekat</h2>
-            </div>
-            <div className="border-[#c3c5d5] border-b flex gap-[20px] items-center shrink-0">
-              <button className="border-[#7a70ba] border-b-2 flex items-center justify-center py-[10px]">
-                <span className="font-medium leading-[1.35] text-[#3f425a] text-[16px] whitespace-nowrap">Toko Bunga</span>
-              </button>
-              <button className="flex items-center justify-center py-[10px] border-b-2 border-transparent transition-colors hover:border-[#c9c4e6]">
-                <span className="font-medium leading-[1.35] text-[#a5a8c0] text-[16px] whitespace-nowrap transition-colors hover:text-[#7a70ba]">Toko Kado</span>
-              </button>
-            </div>
-          </Reveal>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-[16px] lg:gap-[20px] w-full">
-            {stores.map((s, i) => (
-              <Reveal key={s.name} delay={(i % 4) * 70} className="h-full">
-                <a href="/product" className="group flex flex-col gap-[14px] bg-[#f2f3f7] border border-[#e1e2ea] h-full overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_14px_30px_-18px_rgba(84,73,151,0.5)] hover:border-[#c9c4e6]">
-                  <div className="h-[200px] lg:h-[296px] relative w-full overflow-hidden">
-                    <div className="absolute bg-[#f0f1f5] inset-0" />
-                    <img alt={s.name} className="absolute inset-0 size-full object-cover transition-transform duration-500 group-hover:scale-105" src={s.img} />
-                  </div>
-                  <div className="flex flex-col gap-[6px] items-start justify-center px-[16px] py-[12px] w-full">
-                    <div className="flex gap-[6px] items-center w-full">
-                      <FigmaIcon name="store" className="size-[20px]" />
-                      <p className="capitalize leading-[1.6] text-[#696f96] text-[14px] whitespace-nowrap">Toko Bunga</p>
-                    </div>
-                    <p className="font-medium leading-[1.5] text-[#3f425a] text-[16px] lg:text-[18px] whitespace-nowrap">{s.name}</p>
-                  </div>
-                </a>
-              </Reveal>
-            ))}
-          </div>
-        </Container>
-      </section>
+      <StoreLocations />
 
       {/* ======================= TRUSTED BY ======================= */}
       <section className="w-full bg-[#f3f2f7]">
@@ -449,17 +355,7 @@ export default function HomePage() {
               </div>
             </div>
           </div>
-          <div className="flex flex-wrap gap-x-[40px] gap-y-[24px] items-center justify-center sm:justify-between py-[20px] w-full">
-            {brandLogos.map((b, i) => (
-              <img
-                key={i}
-                alt=""
-                src={b.src}
-                style={{ width: b.w, height: b.h }}
-                className="opacity-100"
-              />
-            ))}
-          </div>
+          <BrandMarquee />
         </Container>
       </section>
 

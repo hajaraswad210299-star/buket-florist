@@ -149,7 +149,7 @@ export const productsByTab: Record<string, Product[]> = {
     { img: productAsset.p4, name: "Luxe Lavender Charm", price: "Rp 90.000" },
     { img: productAsset.p5, name: "Luxe Lavender Charm", price: "Rp 75.000" },
     { img: productAsset.p6, name: "Luxe Lavender Charm", price: "Rp 82.500" },
-    { img: productAsset.p7, name: "Velvet Orchid Bliss", price: "Rp 78.000" },
+    { img: productAsset.p7, name: "Velvet Orchid Bliss", price: "Rp 95.000" },
     { img: productAsset.p8, name: "Velvet Orchid Bliss", price: "Rp 80.000" },
     { img: productAsset.p9, name: "Velvet Orchid Bliss", price: "Rp 87.500" },
   ],

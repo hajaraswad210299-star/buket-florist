@@ -1,397 +1,122 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
-import {
-  productTabs,
-  productsByTab,
-  filterKategori,
-  filterRegions,
-  type Product,
-} from "@/components/figmaAssets";
-import {
-  IconSearch,
-  IconChevronDown,
-  IconCheck,
-  IconHeart,
-  IconArrowLeft,
-  IconArrowRight,
-} from "@/components/site/icons";
-import Reveal from "@/components/site/Reveal";
+import { useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { productTabs, productsByTab, filterKategori, filterRegions } from "@/components/figmaAssets";
+import { IconChevronDown, IconHeart, IconArrowLeft, IconArrowRight } from "./icons";
+import styles from "./Product.module.css";
 
-const PRICE_MIN = 34000;
-const PRICE_MAX = 120000;
+const MIN = 34000;
+const PAGE_SIZE = 9;
+let sessionSaved = "[]";
+function writeSaved(values: string[]) {
+ sessionSaved = JSON.stringify(values);
+ try { localStorage.setItem("sekar-wangi-saved-products", sessionSaved); } catch { /* Keep the selection for the current session. */ }
+ window.dispatchEvent(new Event("saved-products-change"));
+}
+function readSaved() { try { return localStorage.getItem("sekar-wangi-saved-products") ?? sessionSaved; } catch { return sessionSaved; } }
+function subscribeSaved(notify: () => void) {
+ window.addEventListener("storage", notify); window.addEventListener("saved-products-change", notify);
+ return () => { window.removeEventListener("storage", notify); window.removeEventListener("saved-products-change", notify); };
+}
+function parseSaved(raw: string): string[] { try { const data: unknown = JSON.parse(raw); return Array.isArray(data) ? data.filter((v): v is string => typeof v === "string") : []; } catch { return []; } }
+function subscribeHash(notify: () => void) { window.addEventListener("hashchange", notify); return () => window.removeEventListener("hashchange", notify); }
+const fmt = (value: number) => `Rp ${value.toLocaleString("id-ID")}`;
+const amount = (value: string) => Number(value.replace(/\D/g, ""));
+const toggle = (values: string[], value: string) => values.includes(value) ? values.filter(v => v !== value) : [...values, value];
 
-function fmt(n: number) {
-  return "Rp " + n.toLocaleString("id-ID");
+function Section({ title, children, id }: { title: string; children: ReactNode; id?: string }) {
+ return <details open className={`${styles.section} ${id ? styles.regionSection : ""}`} id={id}><summary>{title}<IconChevronDown /></summary><div className={styles.sectionBody}>{children}</div></details>;
+}
+function Search({ value, setValue, label }: { value: string; setValue: (value: string) => void; label: string }) {
+ return <label className={styles.search}><img src="/figma/product/search.svg" width="20" height="20" alt="" /><input aria-label={label} placeholder={label} value={value} onChange={e => setValue(e.target.value)} /></label>;
+}
+function Check({ label, checked, onChange }: { label: string; checked: boolean; onChange: () => void }) {
+ return <label className={styles.check}><input type="checkbox" checked={checked} onChange={onChange} /><span>{label}</span></label>;
 }
 
-/* ----------------------------- checkbox row ----------------------------- */
-function CheckRow({
-  label,
-  checked,
-  onToggle,
-}: {
-  label: string;
-  checked: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onToggle}
-      className="group flex gap-[12px] items-center py-[6px] w-full text-left"
-    >
-      <span
-        className={`flex items-center justify-center size-[20px] rounded-[6px] border transition-all duration-200 shrink-0 ${
-          checked
-            ? "bg-[#7a70ba] border-[#7a70ba]"
-            : "border-[#c3c5d5] group-hover:border-[#7a70ba]"
-        }`}
-      >
-        <IconCheck
-          className={`size-[14px] text-white transition-transform duration-200 ${
-            checked ? "scale-100" : "scale-0"
-          }`}
-        />
-      </span>
-      <span
-        className={`leading-[1.5] text-[15px] transition-colors ${
-          checked ? "text-[#3f425a] font-medium" : "text-[#5b5f7a] group-hover:text-[#3f425a]"
-        }`}
-      >
-        {label}
-      </span>
-    </button>
-  );
-}
-
-/* --------------------------- collapsible section --------------------------- */
-function Section({
-  title,
-  open,
-  onToggle,
-  children,
-}: {
-  title: string;
-  open: boolean;
-  onToggle: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <div className="flex flex-col">
-      <button
-        type="button"
-        onClick={onToggle}
-        className="flex items-center justify-between py-[6px] w-full group"
-      >
-        <span className="font-semibold leading-[1.35] text-[#3f425a] text-[16px]">{title}</span>
-        <IconChevronDown
-          className={`size-[20px] text-[#696f96] transition-transform duration-300 group-hover:text-[#7a70ba] ${
-            open ? "rotate-180" : ""
-          }`}
-        />
-      </button>
-      <div className="border-b border-dashed border-[#d7d5e6] mb-[16px] mt-[6px]" />
-      <div
-        className={`grid transition-all duration-300 ease-out ${
-          open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
-        }`}
-      >
-        <div className="overflow-hidden">{children}</div>
-      </div>
-    </div>
-  );
-}
-
-/* -------------------------------- catalog -------------------------------- */
 export default function ProductCatalog() {
-  const [tab, setTab] = useState<string>(productTabs[0]);
-  const [page, setPage] = useState(1);
-  const [kategori, setKategori] = useState<Set<string>>(new Set(["Buket Balon"]));
-  const [region, setRegion] = useState<Set<string>>(new Set(["Tangerang"]));
-  const [openKat, setOpenKat] = useState(true);
-  const [openReg, setOpenReg] = useState(true);
-  const [openHarga, setOpenHarga] = useState(true);
-  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set(["Jabodetabek"]));
-  const [lo, setLo] = useState(PRICE_MIN);
-  const [hi, setHi] = useState(120000);
-  const [mobileFilter, setMobileFilter] = useState(false);
-
-  const products: Product[] = productsByTab[tab] ?? [];
-
-  const toggle = (set: Set<string>, key: string) => {
-    const next = new Set(set);
-    if (next.has(key)) next.delete(key);
-    else next.add(key);
-    return next;
-  };
-
-  const reset = () => {
-    setKategori(new Set());
-    setRegion(new Set());
-    setLo(PRICE_MIN);
-    setHi(PRICE_MAX);
-  };
-
-  const loPct = ((lo - PRICE_MIN) / (PRICE_MAX - PRICE_MIN)) * 100;
-  const hiPct = ((hi - PRICE_MIN) / (PRICE_MAX - PRICE_MIN)) * 100;
-
-  const pages = useMemo(() => [1, 2, 3, 4], []);
-
-  /* ------------------------------- sidebar ------------------------------- */
-  const sidebar = (
-    <div className="bg-white border border-[#e1e2ea] rounded-[6px] p-[24px] flex flex-col gap-[18px]">
-      <div className="flex items-center justify-between">
-        <p className="font-semibold text-[#3f425a] text-[20px] leading-[1.2]">Filter Produk</p>
-        <button
-          type="button"
-          onClick={reset}
-          className="font-medium text-[#f12468] text-[14px] transition-opacity hover:opacity-70"
-        >
-          Reset Filter
-        </button>
-      </div>
-      <div className="border-b border-[#e1e2ea]" />
-
-      {/* Kategori */}
-      <Section title="Kategori" open={openKat} onToggle={() => setOpenKat((v) => !v)}>
-        <label className="flex bg-white border border-[#d9d6eb] items-center gap-[10px] px-[16px] py-[10px] rounded-[90px] mb-[12px] transition-colors focus-within:border-[#928ac7]">
-          <IconSearch className="size-[18px] text-[#a5a8c0] shrink-0" />
-          <input
-            className="flex-1 min-w-0 leading-[1.5] outline-none text-[#3f425a] placeholder:text-[#a5a8c0] text-[14px] bg-transparent"
-            placeholder="Cari Koleksi Acara.."
-          />
-        </label>
-        <div className="filter-scroll flex flex-col max-h-[180px] overflow-y-auto pr-[10px]">
-          {filterKategori.map((k) => (
-            <CheckRow
-              key={k}
-              label={k}
-              checked={kategori.has(k)}
-              onToggle={() => setKategori((s) => toggle(s, k))}
-            />
-          ))}
-        </div>
-      </Section>
-
-      {/* Region */}
-      <Section title="Region" open={openReg} onToggle={() => setOpenReg((v) => !v)}>
-        <label className="flex bg-white border border-[#d9d6eb] items-center gap-[10px] px-[16px] py-[10px] rounded-[90px] mb-[12px] transition-colors focus-within:border-[#928ac7]">
-          <IconSearch className="size-[18px] text-[#a5a8c0] shrink-0" />
-          <input
-            className="flex-1 min-w-0 leading-[1.5] outline-none text-[#3f425a] placeholder:text-[#a5a8c0] text-[14px] bg-transparent"
-            placeholder="Cari Kota..."
-          />
-        </label>
-        <div className="filter-scroll flex flex-col gap-[4px] max-h-[220px] overflow-y-auto pr-[10px]">
-          {filterRegions.map((g) => {
-            const open = openGroups.has(g.group);
-            return (
-              <div key={g.group} className="flex flex-col">
-                <button
-                  type="button"
-                  onClick={() => setOpenGroups((s) => toggle(s, g.group))}
-                  className="flex items-center justify-between py-[6px] w-full group"
-                >
-                  <span className="font-medium text-[#3f425a] text-[15px]">{g.group}</span>
-                  <IconChevronDown
-                    className={`size-[18px] text-[#696f96] transition-transform duration-300 ${
-                      open ? "rotate-180" : ""
-                    }`}
-                  />
-                </button>
-                <div
-                  className={`grid transition-all duration-300 ease-out ${
-                    open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
-                  }`}
-                >
-                  <div className="overflow-hidden pl-[2px]">
-                    {g.items.map((c) => (
-                      <CheckRow
-                        key={c}
-                        label={c}
-                        checked={region.has(c)}
-                        onToggle={() => setRegion((s) => toggle(s, c))}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </Section>
-
-      {/* Harga */}
-      <Section title="Harga" open={openHarga} onToggle={() => setOpenHarga((v) => !v)}>
-        <p className="text-[#696f96] text-[14px] mb-[14px]">
-          {fmt(lo)} – {fmt(hi)}
-        </p>
-        <div className="relative h-[24px] mb-[4px]">
-          <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-[4px] rounded-full bg-[#e1e2ea]" />
-          <div
-            className="absolute top-1/2 -translate-y-1/2 h-[4px] rounded-full bg-[#7a70ba]"
-            style={{ left: `${loPct}%`, right: `${100 - hiPct}%` }}
-          />
-          <input
-            type="range"
-            className="price-range"
-            min={PRICE_MIN}
-            max={PRICE_MAX}
-            step={500}
-            value={lo}
-            onChange={(e) => setLo(Math.min(Number(e.target.value), hi - 500))}
-          />
-          <input
-            type="range"
-            className="price-range"
-            min={PRICE_MIN}
-            max={PRICE_MAX}
-            step={500}
-            value={hi}
-            onChange={(e) => setHi(Math.max(Number(e.target.value), lo + 500))}
-          />
-        </div>
-      </Section>
+ const [tab, setTab] = useState<string>(productTabs[0]);
+ const [categories, setCategories] = useState<string[]>([]);
+ const [cities, setCities] = useState<string[]>([]);
+ const [categorySearch, setCategorySearch] = useState("");
+ const [citySearch, setCitySearch] = useState("");
+ const [lo, setLo] = useState(MIN);
+ const [hi, setHi] = useState(120000);
+ const [page, setPage] = useState(1);
+ const [mobileOpen, setMobileOpen] = useState(false);
+ const hash = useSyncExternalStore(subscribeHash, () => window.location.hash, () => "");
+ const filterOpen = mobileOpen || hash === "#delivery-filter";
+ const saved = parseSaved(useSyncExternalStore(subscribeSaved, readSaved, () => "[]"));
+ const [notice, setNotice] = useState("");
+ const resultsRef = useRef<HTMLDivElement>(null);
+ const max = Math.max(120000, ...productsByTab[tab].map(p => amount(p.price)));
+ // This local catalog has no per-city inventory feed. Region selects the
+ // delivery destination; stock availability must be confirmed with the shop.
+ const category = tab === "Bunga" ? "Buket Fresh Flower" : tab === "Karangan Papan Bunga" ? "Bunga Papan" : "Kado & Cakes";
+ const categoryOptions: string[] = tab === "kado dan Cakes" ? ["Kado & Cakes"] : [...filterKategori];
+ const filtered = productsByTab[tab].filter(p => (!categories.length || categories.includes(category)) && amount(p.price) >= lo && amount(p.price) <= hi);
+ const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+ const currentPage = Math.min(page, pageCount);
+ const visible = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+ const activeCount = categories.length + cities.length + Number(lo !== MIN || hi !== max);
+ function save(key: string, name: string) {
+  const next = toggle(saved, key);
+  setNotice(next.includes(key) ? `${name} disimpan.` : `${name} dihapus dari favorit.`);
+  writeSaved(next);
+ }
+ function reset() { setCategories([]); setCities([]); setLo(MIN); setHi(max); setPage(1); setCategorySearch(""); setCitySearch(""); }
+ function changeTab(value: string) { setTab(value); setCategories([]); setLo(MIN); setHi(Math.max(120000, ...productsByTab[value].map(p => amount(p.price)))); setPage(1); }
+ function changePage(value: number) { setPage(Math.max(1, Math.min(pageCount, value))); resultsRef.current?.scrollIntoView({ block: "start", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" }); }
+ return <section className={styles.catalog} aria-label="Katalog produk">
+  <button type="button" className={styles.mobileToggle} aria-expanded={filterOpen} aria-controls="product-filters" onClick={() => { setMobileOpen(!filterOpen); if (location.hash === "#delivery-filter") { history.replaceState(null, "", location.pathname + location.search); window.dispatchEvent(new HashChangeEvent("hashchange")); } }}>Filter Produk{activeCount ? ` (${activeCount})` : ""}<IconChevronDown /></button>
+  <aside id="product-filters" aria-label="Filter produk" className={styles.sidebar} data-open={filterOpen}>
+   <div className={styles.filterTitle}><h2>Filter Produk</h2><button type="button" className={styles.reset} onClick={reset}>Reset Filter</button></div>
+   <Section title="Kategori">
+    <Search value={categorySearch} setValue={setCategorySearch} label="Cari Koleksi Acara.." />
+    <div className={styles.list}>{categoryOptions.filter(k => k.toLowerCase().includes(categorySearch.toLowerCase())).map(k => <Check key={k} label={k} checked={categories.includes(k)} onChange={() => { setCategories(toggle(categories, k)); setPage(1); }} />)}{!categoryOptions.some(k => k.toLowerCase().includes(categorySearch.toLowerCase())) && <p className={styles.status}>Kategori tidak ditemukan.</p>}</div>
+   </Section>
+   <Section title="Region" id="delivery-filter">
+    <Search value={citySearch} setValue={setCitySearch} label="Cari Kota..." />
+    <div className={styles.list}>{filterRegions.map(group => {
+     const matches = group.items.filter(city => city.toLowerCase().includes(citySearch.toLowerCase()));
+     return matches.length ? <details key={`${group.group}-${!!citySearch}`} open={group.group === "Jabodetabek" || !!citySearch} className={styles.cityGroup}><summary>{group.group}<IconChevronDown /></summary>{matches.map(city => <Check key={city} label={city} checked={cities.includes(city)} onChange={() => setCities(toggle(cities, city))} />)}</details> : null;
+    })}{!filterRegions.some(group => group.items.some(city => city.toLowerCase().includes(citySearch.toLowerCase()))) && <p className={styles.status}>Kota tidak ditemukan.</p>}</div>
+   </Section>
+   <Section title="Harga">
+    <p className={styles.price}>{fmt(lo)} – {fmt(hi)}</p>
+    <div className={styles.range}><div className={styles.rangeTrack} /><div className={styles.rangeFill} style={{ left: `${(lo - MIN) / (max - MIN) * 100}%`, right: `${(max - hi) / (max - MIN) * 100}%` }} />
+     <input type="range" className="price-range" aria-label="Harga minimum" aria-valuetext={fmt(lo)} min={MIN} max={max} step={500} value={lo} onChange={e => { setLo(Math.min(Number(e.target.value), hi - 500)); setPage(1); }} />
+     <input type="range" className="price-range" aria-label="Harga maksimum" aria-valuetext={fmt(hi)} min={MIN} max={max} step={500} value={hi} onChange={e => { setHi(Math.max(Number(e.target.value), lo + 500)); setPage(1); }} />
     </div>
-  );
-
-  /* -------------------------------- render -------------------------------- */
-  return (
-    <section className="w-full bg-[#f3f2f7]">
-      <div className="mx-auto w-full max-w-[1440px] px-5 md:px-10 lg:px-[60px] py-[48px] lg:py-[64px]">
-        <div className="flex flex-col lg:flex-row gap-[24px] lg:gap-[40px] items-start">
-          {/* mobile filter toggle */}
-          <button
-            type="button"
-            onClick={() => setMobileFilter((v) => !v)}
-            className="lg:hidden flex items-center justify-between w-full bg-white border border-[#e1e2ea] rounded-[6px] px-[20px] py-[14px] text-[#3f425a] font-semibold"
-          >
-            Filter Produk
-            <IconChevronDown className={`size-[20px] transition-transform ${mobileFilter ? "rotate-180" : ""}`} />
-          </button>
-
-          {/* sidebar (sticky on desktop, below the sticky navbar) */}
-          <aside className="w-full lg:w-[320px] shrink-0 lg:sticky lg:top-[196px] lg:self-start lg:max-h-[calc(100vh-212px)] lg:overflow-y-auto filter-scroll">
-            <div className={`${mobileFilter ? "block" : "hidden"} lg:block`}>{sidebar}</div>
-          </aside>
-
-          {/* main */}
-          <div className="flex flex-col gap-[28px] w-full min-w-px">
-            {/* tabs */}
-            <div className="flex flex-col gap-0">
-              <div className="flex gap-[24px] sm:gap-[36px] items-center overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                {productTabs.map((t) => {
-                  const active = t === tab;
-                  return (
-                    <button
-                      key={t}
-                      onClick={() => {
-                        setTab(t);
-                        setPage(1);
-                      }}
-                      className={`relative py-[10px] text-[16px] whitespace-nowrap transition-colors ${
-                        active ? "text-[#3f425a] font-medium" : "text-[#a5a8c0] hover:text-[#7a70ba]"
-                      }`}
-                    >
-                      {t}
-                      <span
-                        className={`absolute left-0 -bottom-px h-[2px] bg-[#7a70ba] transition-all duration-300 ${
-                          active ? "w-full" : "w-0"
-                        }`}
-                      />
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="border-b border-[#e1e2ea]" />
-            </div>
-
-            {/* grid */}
-            <div
-              key={tab}
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[16px] lg:gap-[24px]"
-            >
-              {products.map((p, i) => (
-                <Reveal key={`${tab}-${i}`} delay={(i % 3) * 70}>
-                  <a
-                    href="/product/detail"
-                    className="group flex flex-col gap-[16px] focus:outline-none"
-                  >
-                    <div className="relative w-full aspect-[321/384] overflow-hidden bg-[#efeef4]">
-                      <img
-                        alt={p.name}
-                        src={p.img}
-                        className="absolute inset-0 size-full object-cover transition-transform duration-[600ms] ease-out group-hover:scale-105"
-                      />
-                      {/* wishlist micro-interaction */}
-                      <button
-                        type="button"
-                        aria-label="Simpan"
-                        onClick={(e) => e.preventDefault()}
-                        className="absolute top-[12px] right-[12px] flex items-center justify-center size-[38px] rounded-full bg-white/90 text-[#7a70ba] shadow-sm opacity-0 translate-y-1 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0 hover:bg-[#7a70ba] hover:text-white"
-                      >
-                        <IconHeart className="size-[18px]" />
-                      </button>
-                    </div>
-                    <div className="flex flex-col gap-[6px] items-center text-center">
-                      <p className="font-medium leading-[1.35] text-[#3f425a] text-[16px] transition-colors group-hover:text-[#7a70ba]">
-                        {p.name}
-                      </p>
-                      <p className="font-bold leading-[1.2] text-[#3f425a] text-[20px] whitespace-nowrap">
-                        {p.price}
-                      </p>
-                    </div>
-                  </a>
-                </Reveal>
-              ))}
-            </div>
-
-            {/* pagination */}
-            <div className="flex items-center justify-center lg:justify-end gap-[8px] pt-[8px]">
-              <button
-                type="button"
-                aria-label="Sebelumnya"
-                disabled={page === 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="flex items-center justify-center size-[44px] rounded-full bg-[#e5e4f1] text-[#8b88a8] transition-all duration-200 enabled:hover:bg-[#d3d0ea] enabled:hover:text-[#544997] disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <IconArrowLeft className="size-[20px]" />
-              </button>
-              {pages.map((n) => (
-                <button
-                  key={n}
-                  onClick={() => setPage(n)}
-                  className={`flex items-center justify-center size-[44px] rounded-full text-[16px] transition-all duration-200 hover:scale-105 ${
-                    page === n
-                      ? "bg-[#bfbbdd] text-[#544997] font-semibold"
-                      : "text-[#3f425a] hover:bg-[#eceaf6]"
-                  }`}
-                >
-                  {n}
-                </button>
-              ))}
-              <span className="flex items-center justify-center size-[44px] text-[#a5a8c0]">…</span>
-              <button
-                onClick={() => setPage(155)}
-                className={`flex items-center justify-center h-[44px] min-w-[44px] px-[10px] rounded-full text-[16px] transition-all duration-200 hover:scale-105 ${
-                  page === 155 ? "bg-[#bfbbdd] text-[#544997] font-semibold" : "bg-[#f6f6f9] text-[#3f425a] hover:bg-[#eceaf6]"
-                }`}
-              >
-                155
-              </button>
-              <button
-                type="button"
-                aria-label="Berikutnya"
-                onClick={() => setPage((p) => p + 1)}
-                className="flex items-center justify-center size-[44px] rounded-full bg-[#544997] text-white transition-all duration-200 hover:bg-[#443a86] hover:scale-105"
-              >
-                <IconArrowRight className="size-[20px]" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
+   </Section>
+  </aside>
+  <div className={styles.main} ref={resultsRef}>
+   <div role="tablist" aria-label="Jenis produk" className={styles.tabs}>{productTabs.map((value, index) => <button type="button" role="tab" key={value} id={`product-tab-${index}`} aria-controls="product-results" aria-selected={tab === value} tabIndex={tab === value ? 0 : -1} onClick={() => changeTab(value)} onKeyDown={event => {
+    let next = index;
+    if (event.key === "ArrowRight") next = (index + 1) % productTabs.length;
+    else if (event.key === "ArrowLeft") next = (index + productTabs.length - 1) % productTabs.length;
+    else if (event.key === "Home") next = 0;
+    else if (event.key === "End") next = productTabs.length - 1;
+    else return;
+    event.preventDefault(); changeTab(productTabs[next]); document.getElementById(`product-tab-${next}`)?.focus();
+   }}>{value}</button>)}</div>
+   {!!activeCount && <div className={styles.chips}>{categories.map(c => <button type="button" key={c} aria-label={`Hapus kategori ${c}`} onClick={() => setCategories(toggle(categories, c))}>{c} ×</button>)}{cities.map(c => <button type="button" key={c} aria-label={`Hapus kota ${c}`} onClick={() => setCities(toggle(cities, c))}>{c} ×</button>)}</div>}
+   {!!cities.length && <p className={styles.status}>Tujuan: {cities.join(", ")}. Konfirmasi ketersediaan pengiriman dengan toko.</p>}
+   <p className="sr-only" role="status">{filtered.length} produk ditemukan.</p>
+   <div role="tabpanel" id="product-results" aria-labelledby={`product-tab-${productTabs.indexOf(tab as typeof productTabs[number])}`} tabIndex={0}>
+    {visible.length ? <div key={`${tab}-${currentPage}-${lo}-${hi}-${categories.join()}`} className={styles.grid}>{visible.map(p => {
+     const key = `${tab}:${p.img}`;
+     return <article key={key} className={styles.card}>
+      <Link href="/product/detail" className={styles.productImage} aria-label={`Lihat ${p.name}, ${p.price}`}><Image src={p.img} alt={p.name} fill sizes="(max-width: 639px) 45vw, (max-width: 1023px) 30vw, (max-width: 1199px) 40vw, 315px" /></Link>
+      <button type="button" className={styles.save} aria-label={`${saved.includes(key) ? "Hapus" : "Simpan"} ${p.name} ${p.price}`} aria-pressed={saved.includes(key)} onClick={() => save(key, p.name)}><IconHeart /></button>
+      <Link href="/product/detail" className={styles.productText}><h3>{p.name}</h3><p>{p.price}</p></Link>
+     </article>;
+    })}</div> : <div className={styles.empty}><h3>Produk belum ditemukan</h3><p>Coba kategori lain atau perluas rentang harga.</p><button type="button" onClick={reset}>Reset Filter</button></div>}
+   </div>
+   {!!visible.length && <nav className={styles.pagination} aria-label="Halaman produk"><button type="button" aria-label="Halaman sebelumnya" disabled={currentPage === 1} onClick={() => changePage(currentPage - 1)}><IconArrowLeft /></button>{Array.from({ length: pageCount }, (_, i) => i + 1).map(n => <button type="button" key={n} aria-label={`Halaman ${n}`} aria-current={n === currentPage ? "page" : undefined} onClick={() => changePage(n)}>{n}</button>)}<button type="button" aria-label="Halaman berikutnya" disabled={currentPage === pageCount} onClick={() => changePage(currentPage + 1)}><IconArrowRight /></button></nav>}
+   <p className="sr-only" role="status">{notice}</p>
+  </div>
+ </section>;
 }
