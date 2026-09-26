@@ -8,3 +8,41 @@
 .check input{appearance:none;width:20px;height:20px;background:url('/figma/product/checkbox.svg') center/20px 20px no-repeat;cursor:pointer}.check input:checked{background-image:url('/figma/product/checked.svg')}.cityGroup[open]>summary svg{transform:rotate(180deg)}
 @media(max-width:1023px){.regionSection{scroll-margin-top:76px}}
 .productImage{position:relative}
+
+/* Keep the scroll gutter stable; reveal it only while using the filters. */
+.sidebar {
+  --filter-scroll-thumb: transparent;
+  --filter-scroll-track: transparent;
+}
+.sidebar,
+.sidebar .list {
+  scrollbar-color: var(--filter-scroll-thumb) var(--filter-scroll-track);
+}
+.sidebar:focus-within,
+.sidebar:active {
+  --filter-scroll-thumb: #7a70ba;
+  --filter-scroll-track: #e1e2ea;
+}
+@media (hover: hover) {
+  .sidebar:hover {
+    --filter-scroll-thumb: #7a70ba;
+    --filter-scroll-track: #e1e2ea;
+  }
+}
+.sidebar::-webkit-scrollbar,
+.sidebar .list::-webkit-scrollbar {
+  width: 6px;
+}
+.sidebar::-webkit-scrollbar-thumb,
+.sidebar .list::-webkit-scrollbar-thumb {
+  background: var(--filter-scroll-thumb);
+  border-radius: 20px;
+}
+.sidebar::-webkit-scrollbar-track,
+.sidebar .list::-webkit-scrollbar-track {
+  background: var(--filter-scroll-track);
+}
+.sidebar::-webkit-scrollbar-button,
+.sidebar .list::-webkit-scrollbar-button {
+  display: none;
+}
