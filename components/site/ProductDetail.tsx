@@ -1,189 +1,84 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
 import { detailProduct } from "@/components/figmaAssets";
-import { IconStar, IconBag, IconTag, IconHome } from "@/components/site/icons";
-import Reveal from "@/components/site/Reveal";
-import CheckoutModal from "@/components/site/CheckoutModal";
+import CheckoutModal from "./CheckoutModal";
+import styles from "./ProductDetail.module.css";
+
+const photos = Array.from({ length: 5 }, (_, index) => `/figma/detail/thumb-${index + 1}.png`);
+const previews = ["/figma/detail/main.png", ...photos.slice(1)];
+const icon = (name: string) => `/figma/detail/${name}.svg`;
 
 export default function ProductDetail() {
-  const p = detailProduct;
-  const [active, setActive] = useState(0);
-  const [qty, setQty] = useState(1);
-  const [tab, setTab] = useState(0);
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
+ const p = detailProduct;
+ const [active, setActive] = useState(0);
+ const [qty, setQty] = useState(1);
+ const [tab, setTab] = useState(0);
+ const [checkoutOpen, setCheckoutOpen] = useState(false);
+ const [cartNotice, setCartNotice] = useState("");
+ const touch = useRef<{ x: number; y: number } | null>(null);
 
-  return (
-    <section className="w-full bg-[#f3f2f7]">
-      <div className="mx-auto w-full max-w-[1440px] px-5 md:px-10 lg:px-[60px] py-[28px] lg:py-[40px]">
-        {/* breadcrumb */}
-        <div className="flex gap-[8px] items-center text-[14px] lg:text-[15px] leading-[1.35] mb-[24px] lg:mb-[32px]">
-          <IconHome className="size-[17px] text-[#7a70ba]" />
-          <a href="/" className="text-[#696f96] transition-colors hover:text-[#7a70ba]">Home</a>
-          <span className="text-[#c3c5d5]">›</span>
-          <a href="/product" className="text-[#696f96] transition-colors hover:text-[#7a70ba]">Product</a>
-          <span className="text-[#c3c5d5]">›</span>
-          <span className="font-semibold text-[#544997]">{p.name}</span>
-        </div>
+ function addToCart() {
+  try {
+   const raw: unknown = JSON.parse(localStorage.getItem("sekar-wangi-cart") ?? "[]");
+   const items: { id: string; name: string; price: string; image: string; qty: number }[] = Array.isArray(raw) ? raw.filter(item => item && typeof item.id === "string" && Number.isInteger(item.qty) && item.qty > 0) : [];
+   const previous = items.find(item => item.id === "velvet-orchid-rose");
+   const total = Math.min(p.stock, (previous?.qty ?? 0) + qty);
+   const item = { id: "velvet-orchid-rose", name: p.name, price: p.price, image: previews[0], qty: total };
+   localStorage.setItem("sekar-wangi-cart", JSON.stringify([...items.filter(entry => entry.id !== item.id), item]));
+   window.dispatchEvent(new Event("cart-change"));
+   setCartNotice(`${total} buket tersimpan di keranjang.`);
+  } catch { setCartNotice("Keranjang belum bisa disimpan. Gunakan Checkout Sekarang untuk melanjutkan."); }
+ }
+ function changePhoto(index: number) { setActive((index + photos.length) % photos.length); }
 
-        <div className="flex flex-col lg:flex-row gap-[28px] lg:gap-[48px] items-start">
-          {/* ------------------------------ gallery ------------------------------ */}
-          <div className="w-full lg:w-[600px] shrink-0 flex flex-col gap-[16px]">
-            <div className="relative w-full aspect-[610/654] overflow-hidden border border-[#e1e2ea] bg-[#efeef4] group">
-              <img
-                key={active}
-                alt={p.name}
-                src={p.gallery[active]}
-                className="absolute inset-0 size-full object-cover transition-transform duration-[600ms] ease-out group-hover:scale-[1.03] animate-[fadeIn_0.4s_ease]"
-              />
-            </div>
-            <div className="grid grid-cols-5 gap-[12px]">
-              {p.gallery.map((src, i) => (
-                <button
-                  key={i}
-                  onClick={() => setActive(i)}
-                  aria-label={`Foto ${i + 1}`}
-                  className={`relative aspect-[123/88] overflow-hidden border-2 transition-all duration-200 ${
-                    active === i
-                      ? "border-[#7a70ba]"
-                      : "border-transparent opacity-80 hover:opacity-100 hover:border-[#d9d6eb]"
-                  }`}
-                >
-                  <img alt="" src={src} className="absolute inset-0 size-full object-cover" />
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* ------------------------------- info -------------------------------- */}
-          <Reveal className="flex flex-col gap-[18px] w-full min-w-px">
-            {/* title + badge */}
-            <div className="flex items-start justify-between gap-4">
-              <h1 className="font-ivy font-semibold leading-[1.15] text-[#544997] text-[30px] sm:text-[36px] lg:text-[40px]">
-                {p.name}
-              </h1>
-              <span className="shrink-0 bg-[#7a70ba] text-white text-[13px] font-medium leading-[1.35] px-[14px] py-[6px] rounded-[6px]">
-                {p.badge}
-              </span>
-            </div>
-
-            {/* meta + rating */}
-            <div className="flex flex-wrap items-center gap-x-[14px] gap-y-[8px] text-[#696f96] text-[15px] lg:text-[16px]">
-              <span>{p.category}</span>
-              <span className="h-[16px] w-px bg-[#c3c5d5]" />
-              <span>{p.size}</span>
-              <span className="flex items-center gap-[6px] ml-[2px]">
-                <span className="flex items-center gap-[2px]">
-                  {[0, 1, 2, 3, 4].map((i) => (
-                    <IconStar
-                      key={i}
-                      className={`size-[18px] ${i < p.rating ? "text-[#7a70ba]" : "text-[#d5d3e4]"}`}
-                    />
-                  ))}
-                </span>
-                <span className="text-[#3f425a] font-medium">{p.ratingValue}</span>
-              </span>
-            </div>
-
-            {/* price + installment */}
-            <div className="flex flex-wrap items-baseline gap-x-[16px] gap-y-[4px]">
-              <p className="font-ivy font-semibold text-[#544997] text-[34px] lg:text-[40px] leading-[1.1]">
-                {p.price}
-              </p>
-              <p className="text-[#8b88a8] text-[14px] max-w-[280px] leading-[1.4]">{p.installment}</p>
-            </div>
-
-            {/* sold tag */}
-            <div className="flex">
-              <span className="flex items-center gap-[8px] bg-[#eceaf6] text-[#7a70ba] text-[14px] font-medium px-[14px] py-[8px] rounded-[6px]">
-                <IconTag className="size-[16px]" />
-                {p.sold}
-              </span>
-            </div>
-
-            {/* quantity */}
-            <div className="flex flex-col gap-[10px]">
-              <p className="font-medium text-[#3f425a] text-[15px]">Jumlah Pembelian</p>
-              <div className="flex items-center gap-[16px]">
-                <div className="flex items-center border border-[#d9d6eb] rounded-[6px] overflow-hidden">
-                  <button
-                    type="button"
-                    aria-label="Kurangi"
-                    onClick={() => setQty((q) => Math.max(1, q - 1))}
-                    disabled={qty <= 1}
-                    className="flex items-center justify-center size-[48px] text-[#544997] text-[22px] transition-colors enabled:hover:bg-[#f2f3f7] disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    −
-                  </button>
-                  <span className="flex items-center justify-center w-[52px] h-[48px] border-x border-[#d9d6eb] text-[#3f425a] font-medium text-[16px]">
-                    {qty}
-                  </span>
-                  <button
-                    type="button"
-                    aria-label="Tambah"
-                    onClick={() => setQty((q) => Math.min(p.stock, q + 1))}
-                    disabled={qty >= p.stock}
-                    className="flex items-center justify-center size-[48px] text-[#544997] text-[22px] transition-colors enabled:hover:bg-[#f2f3f7] disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    +
-                  </button>
-                </div>
-                <span className="text-[#8b88a8] text-[14px]">Stok saat ini: {p.stock}</span>
-              </div>
-            </div>
-
-            {/* actions */}
-            <div className="flex flex-col gap-[12px] pt-[4px]">
-              <button
-                onClick={() => setCheckoutOpen(true)}
-                className="group bg-[#544997] flex items-center justify-center h-[54px] px-[24px] transition-colors hover:bg-[#443a86]"
-              >
-                <span className="font-medium text-white text-[16px]">Checkout Sekarang</span>
-              </button>
-              <button className="group border border-[#544997] flex items-center justify-center gap-[10px] h-[54px] px-[24px] transition-colors hover:bg-[#544997]/5">
-                <span className="font-medium text-[#544997] text-[16px]">Cart</span>
-                <IconBag className="size-[20px] text-[#544997] transition-transform duration-300 group-hover:-translate-y-0.5" />
-              </button>
-            </div>
-
-            {/* tabs */}
-            <div className="flex flex-col gap-[20px] pt-[10px]">
-              <div className="flex gap-[24px] sm:gap-[40px] items-center border-b border-[#e1e2ea] overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                {p.tabs.map((t, i) => (
-                  <button
-                    key={t.label}
-                    onClick={() => setTab(i)}
-                    className={`relative py-[12px] text-[15px] lg:text-[16px] whitespace-nowrap transition-colors ${
-                      tab === i ? "text-[#544997] font-medium" : "text-[#696f96] hover:text-[#7a70ba]"
-                    }`}
-                  >
-                    {t.label}
-                    <span
-                      className={`absolute left-0 -bottom-px h-[2px] bg-[#544997] transition-all duration-300 ${
-                        tab === i ? "w-full" : "w-0"
-                      }`}
-                    />
-                  </button>
-                ))}
-              </div>
-              <div key={tab} className="flex flex-col gap-[16px] animate-[fadeIn_0.35s_ease]">
-                {p.tabs[tab].body.map((para, i) => (
-                  <p key={i} className="text-[#696f96] text-[15px] leading-[1.6]">
-                    {para}
-                  </p>
-                ))}
-              </div>
-            </div>
-          </Reveal>
-        </div>
-      </div>
-
-      <CheckoutModal
-        open={checkoutOpen}
-        onClose={() => setCheckoutOpen(false)}
-        product={{ name: p.name, price: p.price, image: p.gallery[active] }}
-        qty={qty}
-      />
-    </section>
-  );
+ return <section className={styles.detail} aria-labelledby="detail-title">
+  <nav className={styles.breadcrumb} aria-label="Breadcrumb"><Link href="/">Home</Link><img src={icon("chevron")} alt="" /><Link href="/product">Product</Link><img src={icon("chevron")} alt="" /><span aria-current="page">{p.name}</span></nav>
+  <div className={styles.columns}>
+   <div className={styles.gallery}>
+    <div className={styles.preview} style={{ touchAction: "pan-y" }} onTouchStart={event => { const point = event.touches[0]; touch.current = { x: point.clientX, y: point.clientY }; }} onTouchEnd={event => {
+     if (!touch.current) return;
+     const point = event.changedTouches[0]; const dx = point.clientX - touch.current.x; const dy = point.clientY - touch.current.y;
+     if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) changePhoto(active + (dx < 0 ? 1 : -1));
+     touch.current = null;
+    }} onTouchCancel={() => { touch.current = null; }}>
+     <div className={styles.imageFrame}><Image key={active} src={previews[active]} alt={`${p.name}, tampilan ${active + 1}`} fill sizes="(max-width: 767px) 90vw, (max-width: 1199px) 45vw, 552px" priority={active === 0} className={styles.mainImage} /></div>
+    </div>
+    <div className={styles.thumbnails} role="group" aria-label="Pilih foto produk">{photos.map((src, index) => <button key={src} type="button" aria-label={`Foto ${index + 1}`} aria-pressed={active === index} onClick={() => changePhoto(index)} onKeyDown={event => {
+     let next = index;
+     if (event.key === "ArrowRight") next = (index + 1) % photos.length;
+     else if (event.key === "ArrowLeft") next = (index + photos.length - 1) % photos.length;
+     else return;
+     event.preventDefault(); changePhoto(next); event.currentTarget.parentElement?.querySelectorAll("button")[next]?.focus();
+    }}><Image src={src} alt="" fill sizes="(max-width: 767px) 17vw, 107px" /></button>)}</div>
+    <p className="sr-only" aria-live="polite">Foto {active + 1} dari {photos.length}</p>
+   </div>
+   <div className={styles.info}>
+    <div className={styles.headline}>
+     <div className={styles.titleRow}><h1 id="detail-title">{p.name}</h1><span className={styles.badge}>{p.badge}</span></div>
+     <div className={styles.meta}><span>{p.category}</span><span className={styles.divider} /><span>{p.size}</span><span className={styles.divider} /><div className={styles.rating} aria-label={`Rating ${p.ratingValue} dari 5`}><span className={styles.stars}>{Array.from({ length: 5 }, (_, index) => <img key={index} src={icon(index < p.rating ? "star-filled" : "star")} alt="" />)}</span><span>{p.ratingValue}</span></div></div>
+     <div className={styles.priceRow}><p className={styles.price}>{p.price}</p><p className={styles.installment}>{p.installment}</p></div>
+     <div className={styles.sold}><img src={icon("tag")} alt="" /><span>{p.sold}</span></div>
+    </div>
+    <div className={styles.quantitySection}><p>Jumlah Pembelian</p><div className={styles.quantityRow}><div className={styles.quantity}>
+     <button type="button" aria-label="Kurangi jumlah" disabled={qty <= 1} onClick={() => { setQty(q => Math.max(1, q - 1)); setCartNotice(""); }}><img src={icon("minus")} alt="" /></button>
+     <output aria-live="polite" aria-label="Jumlah pembelian">{qty}</output>
+     <button type="button" aria-label="Tambah jumlah" disabled={qty >= p.stock} onClick={() => { setQty(q => Math.min(p.stock, q + 1)); setCartNotice(""); }}><img src={icon("plus")} alt="" /></button>
+    </div><span className={styles.stock}>Stok saat ini: {p.stock}</span></div></div>
+    <div className={styles.actions}><button type="button" className={styles.checkout} onClick={() => setCheckoutOpen(true)}>Checkout Sekarang</button><button type="button" className={styles.cart} onClick={addToCart}>Cart<img src={icon("cart")} alt="" /></button>{cartNotice && <p className={styles.cartNotice} role="status">{cartNotice}</p>}</div>
+    <div className={styles.description}><div className={styles.tabs} role="tablist" aria-label="Informasi produk">{p.tabs.map((item, index) => <button key={item.label} id={`detail-tab-${index}`} type="button" role="tab" aria-selected={tab === index} tabIndex={tab === index ? 0 : -1} aria-controls="detail-description" onClick={() => setTab(index)} onKeyDown={event => {
+     let next = index;
+     if (event.key === "ArrowRight") next = (index + 1) % p.tabs.length;
+     else if (event.key === "ArrowLeft") next = (index + p.tabs.length - 1) % p.tabs.length;
+     else if (event.key === "Home") next = 0;
+     else if (event.key === "End") next = p.tabs.length - 1;
+     else return;
+     event.preventDefault(); setTab(next); document.getElementById(`detail-tab-${next}`)?.focus();
+    }}>{item.label}</button>)}</div><div id="detail-description" role="tabpanel" aria-labelledby={`detail-tab-${tab}`} tabIndex={0} key={tab} className={styles.tabBody}>{p.tabs[tab].body.map(paragraph => <p key={paragraph}>{paragraph}</p>)}</div></div>
+   </div>
+  </div>
+  <CheckoutModal open={checkoutOpen} onClose={() => setCheckoutOpen(false)} product={{ name: p.name, price: p.price, image: previews[active] }} qty={qty} />
+ </section>;
 }

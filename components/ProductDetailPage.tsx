@@ -6,10 +6,9 @@ import RelatedProducts from "@/components/site/RelatedProducts";
 
 export default function ProductDetailPage() {
   return (
-    <div className="bg-[#f3f2f7] relative w-full overflow-x-hidden">
+    <div className="bg-[#efeef7] relative w-full overflow-x-clip">
       <Navbar />
-      <ProductDetail />
-      <RelatedProducts />
+      <main><ProductDetail /><RelatedProducts /></main>
       <Footer />
       <WhatsappFab />
     </div>
