@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { IconSearch, IconCalendar, IconX } from "@/components/site/icons";
+import { IconSearch, IconX } from "@/components/site/icons";
+import DeliveryTimePicker from "./DeliveryTimePicker";
 
 type Props = {
   open: boolean;
@@ -15,6 +16,7 @@ const inputCls =
 
 export default function CheckoutModal({ open, onClose, product, qty }: Props) {
   const [note, setNote] = useState("");
+  const [deliveryTime, setDeliveryTime] = useState("");
   const [render, setRender] = useState(open);
   const [show, setShow] = useState(false);
 
@@ -33,7 +35,7 @@ export default function CheckoutModal({ open, onClose, product, qty }: Props) {
   // esc to close + lock body scroll
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && !e.defaultPrevented && onClose();
     document.addEventListener("keydown", onKey);
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -88,10 +90,7 @@ export default function CheckoutModal({ open, onClose, product, qty }: Props) {
               <IconSearch className="absolute right-[14px] top-1/2 -translate-y-1/2 size-[18px] text-[#a5a8c0]" />
             </div>
             <input className={inputCls} placeholder="Masukkan Alamat Lengkap Tujuan." />
-            <div className="relative">
-              <input className={inputCls + " pr-[44px]"} placeholder="Pilih Waktu Pengantaran." />
-              <IconCalendar className="absolute right-[14px] top-1/2 -translate-y-1/2 size-[18px] text-[#7a70ba]" />
-            </div>
+            <DeliveryTimePicker value={deliveryTime} onChange={setDeliveryTime} />
 
             <p className="font-medium text-[#3f425a] text-[15px] mt-[4px]">Ucapan</p>
             <div className="flex flex-col gap-[6px]">
@@ -122,6 +121,7 @@ export default function CheckoutModal({ open, onClose, product, qty }: Props) {
                 </div>
               </div>
               <p className="text-[#8b88a8] text-[14px]">{qty}x Item</p>
+              {deliveryTime && <p className="text-[#696f96] text-[14px]">Pengantaran: {new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Jakarta" }).format(new Date(`${deliveryTime}:00+07:00`))} WIB</p>}
             </div>
           </div>
         </div>
