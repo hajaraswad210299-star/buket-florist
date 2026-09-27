@@ -3,18 +3,21 @@
 import { useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { detailProduct } from "@/components/figmaAssets";
+import { formatPrice, type Product } from "@/lib/products";
 import CheckoutModal from "./CheckoutModal";
 import styles from "./ProductDetail.module.css";
 
-const photos = Array.from({ length: 5 }, (_, index) => `/figma/detail/thumb-${index + 1}.png`);
-const previews = ["/figma/detail/main.png", ...photos.slice(1)];
 const icon = (name: string) => `/figma/detail/${name}.svg`;
 
-export default function ProductDetail() {
- const p = detailProduct;
+export default function ProductDetail({ product }: { product: Product }) {
+ const photos = [...new Set([product.image_url, ...product.gallery])];
+ const previews = photos;
+ const p = { ...product, price: formatPrice(product.price), tabs: [
+  { label: "Detail Produk", body: [product.description || "Hubungi kami untuk informasi produk ini."] },
+  { label: "Pengiriman", body: [product.delivery_cities.length ? `Tersedia untuk pengiriman ke ${product.delivery_cities.join(", ")}.` : "Hubungi toko untuk konfirmasi kota tujuan pengiriman."] },
+ ] };
  const [active, setActive] = useState(0);
- const [qty, setQty] = useState(1);
+ const [qty, setQty] = useState(product.stock > 0 ? 1 : 0);
  const [tab, setTab] = useState(0);
  const [checkoutOpen, setCheckoutOpen] = useState(false);
  const [cartNotice, setCartNotice] = useState("");
@@ -24,9 +27,9 @@ export default function ProductDetail() {
   try {
    const raw: unknown = JSON.parse(localStorage.getItem("sekar-wangi-cart") ?? "[]");
    const items: { id: string; name: string; price: string; image: string; qty: number }[] = Array.isArray(raw) ? raw.filter(item => item && typeof item.id === "string" && Number.isInteger(item.qty) && item.qty > 0) : [];
-   const previous = items.find(item => item.id === "velvet-orchid-rose");
+   const previous = items.find(item => item.id === p.id);
    const total = Math.min(p.stock, (previous?.qty ?? 0) + qty);
-   const item = { id: "velvet-orchid-rose", name: p.name, price: p.price, image: previews[0], qty: total };
+   const item = { id: p.id, name: p.name, price: p.price, image: previews[0], qty: total };
    localStorage.setItem("sekar-wangi-cart", JSON.stringify([...items.filter(entry => entry.id !== item.id), item]));
    window.dispatchEvent(new Event("cart-change"));
    setCartNotice(`${total} buket tersimpan di keranjang.`);
@@ -57,17 +60,16 @@ export default function ProductDetail() {
    </div>
    <div className={styles.info}>
     <div className={styles.headline}>
-     <div className={styles.titleRow}><h1 id="detail-title">{p.name}</h1><span className={styles.badge}>{p.badge}</span></div>
-     <div className={styles.meta}><span>{p.category}</span><span className={styles.divider} /><span>{p.size}</span><span className={styles.divider} /><div className={styles.rating} aria-label={`Rating ${p.ratingValue} dari 5`}><span className={styles.stars}>{Array.from({ length: 5 }, (_, index) => <img key={index} src={icon(index < p.rating ? "star-filled" : "star")} alt="" />)}</span><span>{p.ratingValue}</span></div></div>
-     <div className={styles.priceRow}><p className={styles.price}>{p.price}</p><p className={styles.installment}>{p.installment}</p></div>
-     <div className={styles.sold}><img src={icon("tag")} alt="" /><span>{p.sold}</span></div>
+     <div className={styles.titleRow}><h1 id="detail-title">{p.name}</h1></div>
+     <div className={styles.meta}><span>{p.category}</span></div>
+     <div className={styles.priceRow}><p className={styles.price}>{p.price}</p></div>
     </div>
     <div className={styles.quantitySection}><p>Jumlah Pembelian</p><div className={styles.quantityRow}><div className={styles.quantity}>
      <button type="button" aria-label="Kurangi jumlah" disabled={qty <= 1} onClick={() => { setQty(q => Math.max(1, q - 1)); setCartNotice(""); }}><img src={icon("minus")} alt="" /></button>
      <output aria-live="polite" aria-label="Jumlah pembelian">{qty}</output>
      <button type="button" aria-label="Tambah jumlah" disabled={qty >= p.stock} onClick={() => { setQty(q => Math.min(p.stock, q + 1)); setCartNotice(""); }}><img src={icon("plus")} alt="" /></button>
     </div><span className={styles.stock}>Stok saat ini: {p.stock}</span></div></div>
-    <div className={styles.actions}><button type="button" className={styles.checkout} onClick={() => setCheckoutOpen(true)}>Checkout Sekarang</button><button type="button" className={styles.cart} onClick={addToCart}>Cart<img src={icon("cart")} alt="" /></button>{cartNotice && <p className={styles.cartNotice} role="status">{cartNotice}</p>}</div>
+    <div className={styles.actions}><button type="button" className={styles.checkout} disabled={p.stock === 0} onClick={() => setCheckoutOpen(true)}>{p.stock === 0 ? "Stok Habis" : "Checkout Sekarang"}</button><button type="button" className={styles.cart} disabled={p.stock === 0} onClick={addToCart}>Cart<img src={icon("cart")} alt="" /></button>{cartNotice && <p className={styles.cartNotice} role="status">{cartNotice}</p>}</div>
     <div className={styles.description}><div className={styles.tabs} role="tablist" aria-label="Informasi produk">{p.tabs.map((item, index) => <button key={item.label} id={`detail-tab-${index}`} type="button" role="tab" aria-selected={tab === index} tabIndex={tab === index ? 0 : -1} aria-controls="detail-description" onClick={() => setTab(index)} onKeyDown={event => {
      let next = index;
      if (event.key === "ArrowRight") next = (index + 1) % p.tabs.length;

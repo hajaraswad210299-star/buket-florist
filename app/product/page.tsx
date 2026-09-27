@@ -1,3 +1,4 @@
+import { getProducts } from "@/lib/supabase-products";
 import type { Metadata } from "next";
 import ProductPage from "@/components/ProductPage";
 
@@ -7,6 +8,6 @@ export const metadata: Metadata = {
     "Koleksi untuk setiap momen. Temukan bunga yang tepat untuk setiap cerita di Sekar Wangi.",
 };
 
-export default function Page() {
-  return <ProductPage />;
+export default async function Page() {
+  return <ProductPage products={await getProducts()} />;
 }

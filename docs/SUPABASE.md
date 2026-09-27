@@ -1,6 +1,6 @@
 # Menghubungkan katalog Sekar Wangi ke Supabase
 
-Status: skema sudah disiapkan. Website masih membaca katalog lokal dari `components/figmaAssets.ts`; konfigurasi environment saja belum mengubah sumber data. Pemilih waktu pengantaran juga masih state formulir, belum menyimpan pesanan ke database.
+Status: katalog /product dan detail /product/detail/[slug] membaca produk aktif dari Supabase Data API di server. Home dan halaman admin belum terhubung. Checkout membuka WhatsApp; pesanan belum disimpan ke database.
 
 ## 1. Buat project
 
@@ -33,16 +33,16 @@ File `.env.local` sudah diabaikan Git. Jangan masukkan password database atau se
 
 ## 4. Sambungkan kode setelah project siap
 
-Tahap implementasi berikutnya:
+Integrasi menggunakan fetch bawaan Next.js ke Supabase Data API, sehingga tidak memerlukan SDK tambahan. Data diambil ulang setiap request tanpa cache, memakai publishable key dan RLS.
 
-1. Pasang `@supabase/supabase-js` dengan package manager proyek.
-2. Buat client server untuk membaca `products` menggunakan URL dan publishable key di atas.
-3. Ambil produk aktif, ubah harga numerik menjadi format Rupiah pada UI, dan berikan datanya ke ProductCatalog.
-4. Ganti detail statis dengan detail berdasarkan slug, lalu sambungkan tautan kartu ke slug yang benar.
-5. Tambahkan loading/error/empty state. Jangan menyamarkan kegagalan database dengan produk contoh.
-6. Verifikasi produk nonaktif tidak terbaca memakai publishable key dan operasi tulis ditolak. Saat deploy, isi environment yang sama pada layanan hosting lalu redeploy.
-
-Setelah langkah 1–3 di atas selesai, beri tahu bahwa project dan `.env.local` sudah siap agar integrasi kode bisa dilanjutkan. Tidak perlu mengirim password database.
+- Kelola produk di Table Editor. `is_active=true` menampilkan produk di katalog.
+- Harga dan stok harus berupa angka. Stok 0 menonaktifkan checkout.
+- `delivery_cities` berisi nama kota yang sama dengan filter website; array kosong tidak cocok dengan filter kota mana pun.
+- `image_url` dan `gallery` mendukung aset lokal atau URL publik Supabase Storage project ini.
+- Detail produk memakai slug unik. Slug tidak ditemukan/nonaktif menampilkan 404.
+- Jika koneksi gagal, halaman menampilkan pesan kesalahan dan tombol Coba Lagi.
+- Saat deploy, isi kedua environment variable pada hosting lalu redeploy. `.env.local` tidak dipush.
+- Home dan fitur admin masih memakai data lokal. Kelola database melalui dashboard Supabase untuk saat ini.
 
 ## Referensi resmi
 
