@@ -21,6 +21,14 @@ Buat session secret acak dengan password manager atau `node -e "console.log(requ
 
 ## Cara memakai
 
+### Deploy Vercel
+
+Di project Vercel, buka Settings → Environment Variables. Isi lima variabel:
+`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, `ADMIN_PASSWORD`, dan `ADMIN_SESSION_SECRET`.
+Pilih Production, serta Preview jika deployment preview juga memerlukan akses database. Gunakan nilai konfigurasi sendiri, bukan placeholder. Saat mengisi satu per satu lewat dashboard, masukkan nilai mentah tanpa tanda kutip pembungkus `.env`; simbol `$` tidak perlu diberi backslash seperti dalam `.env.local`.
+Simpan, lalu lakukan deployment baru/redeploy agar environment diterapkan. `.env.local` tetap tidak diunggah ke GitHub.
+Katalog dirender saat request, sehingga build tidak melakukan query produk. Environment Supabase tetap wajib tersedia agar halaman berfungsi saat dibuka.
+
 - Isi nama, slug unik, diameter, jenis, kategori, harga Rupiah tanpa pemisah ribuan, dan stok.
 - Kategori pertama menjadi kategori utama katalog. Tag lainnya tetap disimpan.
 - Isi kota pengiriman dipisahkan koma, persis seperti pilihan filter toko. Kosong berarti tujuan belum diatur.

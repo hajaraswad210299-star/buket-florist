@@ -1,9 +1,12 @@
 import "server-only";
 import { cache } from "react";
+import { connection } from "next/server";
 import type { Product } from "./products";
 
 // Use the public Data API with RLS; never use a service-role key for the catalog.
 export const getProducts = cache(async (): Promise<Product[]> => {
+ // Do not require database configuration while prerendering the build.
+ await connection();
  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
  if (!url || !key) throw new Error("Konfigurasi Supabase belum tersedia.");
