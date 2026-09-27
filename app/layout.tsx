@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
-import { Instrument_Serif } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
-const instrumentSerif = Instrument_Serif({
-  variable: "--font-instrument-serif",
-  weight: "400",
-  style: ["normal", "italic"],
-  subsets: ["latin"],
+const instrumentSerif = localFont({
+ variable: "--font-instrument-serif",
+ src: [{path:"../public/fonts/InstrumentSerif1.ttf",weight:"400",style:"normal"},{path:"../public/fonts/InstrumentSerif0.ttf",weight:"400",style:"italic"}],
+ display: "swap",
 });
 
 export const metadata: Metadata = {

@@ -1,6 +1,6 @@
 # Aktivasi admin produk
 
-UI yang tersedia: `/admin` (ringkasan database), `/admin/products` (semua produk aktif/draft), `/admin/products/new` dan tombol Edit pada daftar.
+UI yang tersedia: `/admin` (dashboard desain dengan statistik contoh), `/admin/products` (semua produk aktif/draft), `/admin/products/new` dan tombol Edit pada daftar.
 
 ## Konfigurasi sekali
 
@@ -43,7 +43,7 @@ Semua pembacaan admin, penyimpanan, dan upload memeriksa sesi di server. Secret 
 
 Password ini adalah pengaman sementara untuk satu admin/satu instance server sebelum Google Auth. Pembatasan login sementara berada di memori proses (10 kegagalan per 10 menit); untuk produksi multi-instance ganti dengan autentikasi Google, daftar admin yang diizinkan, dan rate limit terpusat. Tidak ada akun admin yang dibuat otomatis.
 
-Dashboard hanya menampilkan ringkasan produk/stok sebenarnya. Pesanan, grafik pendapatan, dan pelanggan belum memiliki tabel/sumber data. Login Google belum diimplementasikan.
+Dashboard mengikuti desain Figma dan menampilkan statistik, grafik, serta pesanan contoh. Menu dashboard mengarah ke jumlah produk sebenarnya dari Supabase. Pesanan, pendapatan, dan pelanggan belum memiliki tabel/sumber data. Profil Yuna Claire adalah dummy; klik avatar untuk membuka menu Logout. Login Google belum diimplementasikan.
 
 ## Verifikasi
 

@@ -1,5 +1,6 @@
 "use client";
 
+import AdminAvatar from "./AdminAvatar";
 import { usePathname } from "next/navigation";
 import { asset } from "@/components/figmaAssets";
 import { IconGrid, IconSearch } from "@/components/site/icons";
@@ -15,7 +16,7 @@ export default function AdminSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden lg:flex flex-col w-[264px] shrink-0 sticky top-0 h-screen bg-[#141415] text-white px-[16px] py-[20px]">
+    <aside className="hidden lg:flex flex-col w-[270px] shrink-0 sticky top-0 h-screen bg-[#141415] text-white px-[14px] py-[16px]">
       {/* logo */}
       <div className="flex items-center justify-between px-[8px] mb-[22px]">
         <div className="flex items-center gap-[10px]">
@@ -67,14 +68,7 @@ export default function AdminSidebar() {
         })}
       </nav>
 
-      {/* user */}
-      <div className="mt-auto flex items-center gap-[12px] bg-[#232325] rounded-[12px] p-[10px]">
-        <img alt="" src={asset.ellipse1} className="size-[40px] rounded-full object-cover" />
-        <div className="flex flex-col min-w-px">
-          <p className="text-[14px] font-medium leading-tight truncate">Admin Toko</p>
-          <p className="text-[12px] text-[#8a8a95] leading-tight truncate">Sekar Wangi</p>
-        </div>
-      </div>
+      <div className="mt-auto pt-6"><AdminAvatar /></div>
     </aside>
   );
 }
