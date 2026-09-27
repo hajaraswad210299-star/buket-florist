@@ -1,6 +1,9 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import type { Product } from "@/lib/products";
+import { saveProduct, uploadProductImage } from "@/app/admin/actions";
 import { productAsset } from "@/components/figmaAssets";
 import { IconArrowLeft, IconChevronDown } from "@/components/site/icons";
 import { IconUpload, IconImage, IconSave, IconGrip, IconDoc } from "@/components/admin/icons";
@@ -19,38 +22,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 const inputCls =
   "w-full bg-white border border-[#e1e2ea] rounded-[10px] px-[16px] py-[12px] text-[15px] text-[#3f425a] placeholder:text-[#a5a8c0] outline-none transition-colors focus:border-[#928ac7]";
 
-function Toolbar() {
-  const btn =
-    "flex items-center justify-center size-[30px] rounded-[7px] text-[#696f96] transition-colors hover:bg-[#eceaf6] hover:text-[#544997]";
-  return (
-    <div className="flex flex-wrap items-center gap-[4px] border-b border-[#e1e2ea] px-[10px] py-[8px]">
-      <button type="button" className="flex items-center gap-[4px] h-[30px] px-[8px] rounded-[7px] text-[#696f96] text-[13px] transition-colors hover:bg-[#eceaf6]">
-        16px <IconChevronDown className="size-[13px]" />
-      </button>
-      <span className="w-px h-[18px] bg-[#e1e2ea] mx-[4px]" />
-      <button type="button" className={btn + " font-bold"}>B</button>
-      <button type="button" className={btn + " italic font-serif"}>I</button>
-      <button type="button" className={btn + " underline"}>U</button>
-      <span className="w-px h-[18px] bg-[#e1e2ea] mx-[4px]" />
-      {["M3 6h18M3 12h12M3 18h16", "M3 6h18M6 12h12M4 18h16", "M3 6h18M9 12h12M5 18h16", "M3 6h18M3 12h18M3 18h18"].map((d, i) => (
-        <button key={i} type="button" className={btn}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" className="size-[16px]">
-            <path d={d} />
-          </svg>
-        </button>
-      ))}
-      <span className="w-px h-[18px] bg-[#e1e2ea] mx-[4px]" />
-      <button type="button" className={btn}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" className="size-[16px]">
-          <path d="M10 14a4 4 0 0 0 5.6 0l2.4-2.4a4 4 0 0 0-5.6-5.6L11 7.4" />
-          <path d="M14 10a4 4 0 0 0-5.6 0L6 12.4a4 4 0 0 0 5.6 5.6L13 16.6" />
-        </svg>
-      </button>
-    </div>
-  );
-}
-
-function RichSection({ title }: { title: string }) {
+function RichSection({ title, value, onChange }: { title: string; value: { heading: string; body: string }; onChange: (value: { heading: string; body: string }) => void }) {
   return (
     <div className="flex items-stretch gap-[10px]">
       <span className="hidden md:flex items-center text-[#c3c5d5]"><IconGrip className="size-[16px]" /></span>
@@ -59,15 +31,16 @@ function RichSection({ title }: { title: string }) {
           <IconDoc className="size-[17px]" /> {title}
         </p>
         <Field label="Heading">
-          <input className={inputCls} placeholder="Header Tittle..." />
+          <input className={inputCls} placeholder="Judul bagian" value={value.heading} onChange={e => onChange({ ...value, heading: e.target.value })} maxLength={120} />
         </Field>
         <div className="flex flex-col gap-[8px]">
           <span className="text-[#3f425a] text-[14px] font-medium">Body Text</span>
           <div className="rounded-[10px] border border-[#e1e2ea] overflow-hidden">
-            <Toolbar />
+
             <textarea
               className="w-full h-[130px] resize-none bg-[#f7f7fb] px-[16px] py-[12px] text-[15px] text-[#3f425a] placeholder:text-[#a5a8c0] outline-none"
               placeholder="Describe your content..."
+              value={value.body} onChange={e => onChange({ ...value, body: e.target.value })} maxLength={10000}
             />
           </div>
         </div>
@@ -80,20 +53,58 @@ function RichSection({ title }: { title: string }) {
 
 function formatRp(v: string) {
   const n = Number(v.replace(/\D/g, ""));
-  if (!n) return "Rp 180.000";
+  if (!n) return "Rp 0";
   return "Rp " + n.toLocaleString("id-ID");
 }
 
-export default function AdminCreateProduct() {
-  const [title, setTitle] = useState("");
-  const [size, setSize] = useState("");
-  const [jenis, setJenis] = useState("Buket Bunga");
+export default function AdminCreateProduct({ product }: { product?: Product }) {
+  const router = useRouter();
+  const [title, setTitle] = useState(product?.name ?? "");
+  const [size, setSize] = useState(product?.size_cm?.toString() ?? "");
+  const [jenis, setJenis] = useState(product?.product_group ?? "Bunga");
   const [tagInput, setTagInput] = useState("");
-  const [tags, setTags] = useState<string[]>(["Buket Bunga", "Ulang tahun", "Wisuda"]);
-  const [thumb, setThumb] = useState<string | null>(null);
-  const [images, setImages] = useState<string[]>([productAsset.p6, productAsset.p4, productAsset.p3]);
-  const [stok, setStok] = useState("");
-  const [harga, setHarga] = useState("");
+  const [tags, setTags] = useState<string[]>(product?.tags?.length ? product.tags : product ? [product.category] : []);
+  const [thumb, setThumb] = useState<string | null>(product?.image_url ?? null);
+  const [images, setImages] = useState<string[]>(product?.gallery ?? []);
+  const [stok, setStok] = useState(product?.stock.toString() ?? "");
+  const [harga, setHarga] = useState(product?.price.toString() ?? "");
+  const [slug, setSlug] = useState(product?.slug ?? "");
+  const [cities, setCities] = useState(product?.delivery_cities.join(", ") ?? "");
+  const [sections, setSections] = useState(["Detail Buket", "Perawatan Bunga", "Pengiriman & Pengembalian"].map((heading, i) => product?.content_sections?.[i] ?? { heading, body: i === 0 ? product?.description ?? "" : "" }));
+  const [busy, setBusy] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+  const submitting = useRef(false);
+  async function upload(files: File[], cover: boolean) {
+    if (uploading || busy) return;
+    setError(""); setUploading(true);
+    try {
+      if (!files.length || (!cover && images.length + files.length > 12)) throw new Error("Maksimal 12 foto galeri.");
+      for (const file of files) {
+        const data = new FormData(); data.set("file", file);
+        const result = await uploadProductImage(data);
+        if (!result.ok) throw new Error(result.error);
+        if (cover) setThumb(result.url); else setImages(previous => [...previous, result.url]);
+      }
+    } catch (e) { setError(e instanceof Error ? e.message : "Upload gagal. Silakan coba lagi."); }
+    finally { setUploading(false); }
+  }
+  async function save(active: boolean) {
+    if (submitting.current || uploading) return;
+    submitting.current = true; setBusy(true); setError("");
+    try {
+      if (!harga.trim() || !stok.trim() || !/^\d+$/.test(harga) || !/^\d+$/.test(stok)) throw new Error("Isi harga dan stok dengan angka bulat tanpa titik.");
+      const result = await saveProduct(product?.id ?? null, {
+        name: title, slug, product_group: jenis, category: tags[0] ?? "", tags,
+        size_cm: size ? Number(size) : null, price: Number(harga), stock: Number(stok),
+        image_url: thumb ?? "", gallery: images, delivery_cities: cities.split(",").map(v => v.trim()).filter(Boolean),
+        description: sections[0].body, content_sections: sections, is_active: active,
+      });
+      if (!result.ok) throw new Error(result.error);
+      router.push("/admin/products?saved=1"); router.refresh();
+    } catch (e) { setError(e instanceof Error ? e.message : "Produk gagal disimpan."); }
+    finally { submitting.current = false; setBusy(false); }
+  }
 
   const thumbInput = useRef<HTMLInputElement>(null);
   const galleryInput = useRef<HTMLInputElement>(null);
@@ -121,7 +132,7 @@ export default function AdminCreateProduct() {
         <p className="text-[16px]">
           <span className="text-[#8b8f99]">Product</span>
           <span className="text-[#c3c5d5] mx-[8px]">/</span>
-          <span className="font-semibold text-[#1d211d]">Add New Product</span>
+          <span className="font-semibold text-[#1d211d]">{product ? "Edit Product" : "Add New Product"}</span>
         </p>
       </div>
 
@@ -134,12 +145,14 @@ export default function AdminCreateProduct() {
 
             <textarea
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => { setTitle(e.target.value); if (!product) setSlug(e.target.value.toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")); }}
               rows={2}
               placeholder="Tambahkan Judul Product…"
               className="w-full resize-none bg-[#f1f1f6] rounded-[12px] px-[22px] py-[20px] font-ivy text-[28px] leading-[1.2] text-[#3f425a] placeholder:text-[#b3aed6] outline-none transition-shadow focus:ring-2 focus:ring-[#928ac7]/40"
             />
 
+            <Field label="Slug (alamat produk)"><input value={slug} onChange={e => setSlug(e.target.value)} className={inputCls} placeholder="buket-lavender" /></Field>
+            <Field label="Kota Pengiriman (pisahkan dengan koma)"><input value={cities} onChange={e => setCities(e.target.value)} className={inputCls} placeholder="Jakarta Pusat, Bandung" /></Field>
             <Field label="Size Diameter">
               <div className="relative">
                 <input value={size} onChange={(e) => setSize(e.target.value)} className={inputCls + " pr-[52px]"} placeholder="E.g 40" />
@@ -155,9 +168,9 @@ export default function AdminCreateProduct() {
                     onChange={(e) => setJenis(e.target.value)}
                     className={inputCls + " appearance-none pr-[40px] cursor-pointer"}
                   >
-                    <option>Buket Bunga</option>
-                    <option>Karangan Papan</option>
-                    <option>Kado &amp; Cakes</option>
+                    <option value="Bunga">Buket Bunga</option>
+                    <option value="Karangan Papan Bunga">Karangan Papan</option>
+                    <option value="kado dan Cakes">Kado &amp; Cakes</option>
                   </select>
                   <IconChevronDown className="absolute right-[14px] top-1/2 -translate-y-1/2 size-[16px] text-[#8b8f99] pointer-events-none" />
                 </div>
@@ -215,19 +228,20 @@ export default function AdminCreateProduct() {
                     <span className="flex items-center justify-center size-[46px] rounded-full bg-white text-[#544997] shadow-sm transition-transform duration-300 group-hover:-translate-y-0.5">
                       <IconUpload className="size-[22px]" />
                     </span>
-                    <p className="text-[#3f425a] text-[14px] font-medium">Click to Upload or drag and drop</p>
-                    <p className="text-[#8b8f99] text-[13px]">PNG, JPG, or GIF (max. 800x400px)</p>
+                    <p className="text-[#3f425a] text-[14px] font-medium">Klik untuk upload foto</p>
+                    <p className="text-[#8b8f99] text-[13px]">PNG, JPG, WebP (maks. 5 MB)</p>
                   </div>
                 )}
               </button>
               <input
                 ref={thumbInput}
                 type="file"
-                accept="image/*"
+                accept="image/png,image/jpeg,image/webp" disabled={busy || uploading}
                 hidden
                 onChange={(e) => {
                   const f = e.target.files?.[0];
-                  if (f) setThumb(URL.createObjectURL(f));
+                  if (f) void upload([f], true);
+                  e.target.value = "";
                 }}
               />
             </Field>
@@ -245,7 +259,7 @@ export default function AdminCreateProduct() {
                   <button
                     type="button"
                     onClick={() => setImages(images.filter((_, x) => x !== i))}
-                    className="absolute top-[8px] right-[8px] flex items-center justify-center size-[26px] rounded-full bg-black/50 text-white text-[14px] opacity-0 transition-opacity group-hover:opacity-100 hover:bg-[#f3205c]"
+                    className="absolute top-[8px] right-[8px] flex items-center justify-center size-[26px] rounded-full bg-black/50 text-white text-[14px] opacity-100 sm:opacity-0 transition-opacity group-hover:opacity-100 focus:opacity-100 hover:bg-[#f3205c]"
                     aria-label="Hapus foto"
                   >
                     ×
@@ -261,17 +275,18 @@ export default function AdminCreateProduct() {
                   <IconUpload className="size-[18px]" />
                 </span>
                 <span className="text-[13px] font-medium text-[#3f425a]">Tambahkan Foto</span>
-                <span className="text-[12px]">PNG, (max. 800x400px)</span>
+                <span className="text-[12px]">PNG, JPG, WebP · maks. 5 MB</span>
               </button>
               <input
                 ref={galleryInput}
                 type="file"
-                accept="image/*"
+                accept="image/png,image/jpeg,image/webp" disabled={busy || uploading}
                 multiple
                 hidden
                 onChange={(e) => {
-                  const files = Array.from(e.target.files ?? []).map((f) => URL.createObjectURL(f));
-                  if (files.length) setImages([...images, ...files]);
+                  const files = Array.from(e.target.files ?? []);
+                  if (files.length) void upload(files, false);
+                  e.target.value = "";
                 }}
               />
             </div>
@@ -279,9 +294,7 @@ export default function AdminCreateProduct() {
 
           {/* rich sections */}
           <p className="text-[#544997] text-[14px] font-medium">Informasi Pokok Produk</p>
-          <RichSection title="Detail Buket" />
-          <RichSection title="Perawatan Bunga" />
-          <RichSection title="Pengiriman &amp; Pengembalian" />
+          {sections.map((section, index) => <RichSection key={index} title={["Detail Buket", "Perawatan Bunga", "Pengiriman & Pengembalian"][index]} value={section} onChange={value => setSections(previous => previous.map((s, i) => i === index ? value : s))} />)}
         </div>
 
         {/* ------------------------------ right ------------------------------ */}
@@ -321,13 +334,16 @@ export default function AdminCreateProduct() {
             </div>
           </div>
 
+          {error && <p role="alert" className="rounded-lg bg-red-50 p-4 text-red-700">{error}</p>}
+          {(busy || uploading) && <p role="status">{uploading ? "Mengunggah gambar..." : "Menyimpan produk..."}</p>}
+          <p className="text-sm text-[#696f96]">Kategori pertama menjadi kategori utama. Draft tidak tampil di katalog.</p>
           {/* actions */}
           <div className="flex items-center gap-[12px]">
-            <button className="group flex-1 flex items-center justify-center gap-[8px] h-[48px] rounded-[10px] border border-[#e1e2ea] text-[#3f425a] text-[14px] font-medium transition-colors hover:bg-[#f2f3f7]">
+            <button type="button" disabled={busy || uploading} onClick={() => save(false)} className="disabled:opacity-50 group flex-1 flex items-center justify-center gap-[8px] h-[48px] rounded-[10px] border border-[#e1e2ea] text-[#3f425a] text-[14px] font-medium transition-colors hover:bg-[#f2f3f7]">
               Save as Draft
               <IconSave className="size-[17px] text-[#8b8f99] transition-colors group-hover:text-[#544997]" />
             </button>
-            <button className="group flex-1 flex items-center justify-center gap-[8px] h-[48px] rounded-[10px] bg-[#544997] text-white text-[14px] font-medium transition-colors hover:bg-[#443a86]">
+            <button type="button" disabled={busy || uploading} onClick={() => save(true)} className="group flex-1 flex items-center justify-center gap-[8px] h-[48px] rounded-[10px] bg-[#544997] text-white text-[14px] font-medium transition-colors hover:bg-[#443a86]">
               Publish
               <span className="transition-transform duration-500 group-hover:rotate-180">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} className="size-[17px]">

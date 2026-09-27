@@ -1,6 +1,6 @@
 # Menghubungkan katalog Sekar Wangi ke Supabase
 
-Status: katalog /product dan detail /product/detail/[slug] membaca produk aktif dari Supabase Data API di server. Home dan halaman admin belum terhubung. Checkout membuka WhatsApp; pesanan belum disimpan ke database.
+Status: katalog /product dan detail /product/detail/[slug] membaca produk aktif dari Supabase Data API di server. Home belum terhubung. Admin produk terhubung setelah konfigurasi di docs/ADMIN-SUPABASE.md. Checkout membuka WhatsApp; pesanan belum disimpan ke database.
 
 ## 1. Buat project
 
@@ -16,7 +16,7 @@ Status: katalog /product dan detail /product/detail/[slug] membaca produk aktif 
 4. Tambahkan produk lain: harga berupa angka Rupiah (85000, bukan Rp 85.000), stok bilangan bulat, slug unik, kelompok produk sesuai pilihan di SQL, dan `is_active=true` untuk produk yang siap ditampilkan.
 5. `image_url` dapat memakai aset lokal `/figma/...` yang sudah ada. Untuk gambar baru, unggah melalui Supabase Storage dan simpan URL gambarnya. Jangan aktifkan unggah publik tanpa aturan akses admin.
 
-SQL mengaktifkan RLS dan hanya memberi akses baca produk aktif untuk pengunjung. Pengunjung maupun akun yang baru login tidak dapat menambah/mengubah/menghapus produk melalui API. Untuk tahap awal, kelola produk dari Table Editor. Halaman admin website belum tersambung; perlu autentikasi dan aturan role admin sebelum fitur tulis diaktifkan.
+SQL mengaktifkan RLS dan hanya memberi akses baca produk aktif untuk pengunjung. Pengunjung maupun akun yang baru login tidak dapat menambah/mengubah/menghapus produk melalui API. Untuk tahap awal, kelola produk dari Table Editor. Untuk memakai UI admin website, ikuti docs/ADMIN-SUPABASE.md. Akses tulis memerlukan sesi admin dan key server.
 
 ## 3. Ambil konfigurasi
 
@@ -42,7 +42,7 @@ Integrasi menggunakan fetch bawaan Next.js ke Supabase Data API, sehingga tidak 
 - Detail produk memakai slug unik. Slug tidak ditemukan/nonaktif menampilkan 404.
 - Jika koneksi gagal, halaman menampilkan pesan kesalahan dan tombol Coba Lagi.
 - Saat deploy, isi kedua environment variable pada hosting lalu redeploy. `.env.local` tidak dipush.
-- Home dan fitur admin masih memakai data lokal. Kelola database melalui dashboard Supabase untuk saat ini.
+- Home masih memakai data lokal. UI admin produk memakai database dengan sesi admin; lihat docs/ADMIN-SUPABASE.md.
 
 ## Referensi resmi
 

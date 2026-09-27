@@ -12,7 +12,7 @@ const icon = (name: string) => `/figma/detail/${name}.svg`;
 export default function ProductDetail({ product }: { product: Product }) {
  const photos = [...new Set([product.image_url, ...product.gallery])];
  const previews = photos;
- const p = { ...product, price: formatPrice(product.price), tabs: [
+ const p = { ...product, price: formatPrice(product.price), tabs: product.content_sections?.some(section => section.body.trim()) ? product.content_sections.filter(section => section.body.trim()).map(section => ({ label: section.heading || "Informasi Produk", body: section.body.split("\n").filter(Boolean) })) : [
   { label: "Detail Produk", body: [product.description || "Hubungi kami untuk informasi produk ini."] },
   { label: "Pengiriman", body: [product.delivery_cities.length ? `Tersedia untuk pengiriman ke ${product.delivery_cities.join(", ")}.` : "Hubungi toko untuk konfirmasi kota tujuan pengiriman."] },
  ] };
@@ -61,7 +61,7 @@ export default function ProductDetail({ product }: { product: Product }) {
    <div className={styles.info}>
     <div className={styles.headline}>
      <div className={styles.titleRow}><h1 id="detail-title">{p.name}</h1></div>
-     <div className={styles.meta}><span>{p.category}</span></div>
+     <div className={styles.meta}><span>{p.category}</span>{p.size_cm && <span>Ukuran: {p.size_cm} cm</span>}</div>
      <div className={styles.priceRow}><p className={styles.price}>{p.price}</p></div>
     </div>
     <div className={styles.quantitySection}><p>Jumlah Pembelian</p><div className={styles.quantityRow}><div className={styles.quantity}>

@@ -8,7 +8,7 @@ import { IconChartBox, IconParcel, IconPanelLeft } from "@/components/admin/icon
 const nav = [
   { label: "Dashboard", href: "/admin", Icon: IconGrid, badge: null as string | null },
   { label: "Products", href: "/admin/products", Icon: IconChartBox, badge: null },
-  { label: "Order", href: "/admin/order", Icon: IconParcel, badge: "7" },
+  { label: "Lihat Toko", href: "/product", Icon: IconParcel, badge: null },
 ];
 
 export default function AdminSidebar() {
@@ -71,8 +71,8 @@ export default function AdminSidebar() {
       <div className="mt-auto flex items-center gap-[12px] bg-[#232325] rounded-[12px] p-[10px]">
         <img alt="" src={asset.ellipse1} className="size-[40px] rounded-full object-cover" />
         <div className="flex flex-col min-w-px">
-          <p className="text-[14px] font-medium leading-tight truncate">Yuna Claire</p>
-          <p className="text-[12px] text-[#8a8a95] leading-tight truncate">yunaclaire@mail.com</p>
+          <p className="text-[14px] font-medium leading-tight truncate">Admin Toko</p>
+          <p className="text-[12px] text-[#8a8a95] leading-tight truncate">Sekar Wangi</p>
         </div>
       </div>
     </aside>

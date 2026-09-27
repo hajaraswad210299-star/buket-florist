@@ -1,10 +1,6 @@
-import { statsProducts, productRows } from "@/components/admin/adminData";
-import StatCard from "@/components/admin/StatCard";
-import AdminTopbar from "@/components/admin/AdminTopbar";
-import { IconKebab } from "@/components/admin/icons";
-import { IconArrowRight } from "@/components/site/icons";
-
-export default function AdminProducts() {
+import { formatPrice, type Product } from "@/lib/products";
+import AdminTopbar from "./AdminTopbar";
+export default function AdminProducts({ products }: { products: Product[] }) {
   return (
     <main className="bg-white lg:rounded-[20px] min-h-screen lg:min-h-[calc(100vh-16px)] overflow-hidden">
       <AdminTopbar page="Products" />
@@ -31,19 +27,14 @@ export default function AdminProducts() {
 
         {/* stat cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-[20px]">
-          {statsProducts.map((s) => (
-            <StatCard key={s.label} {...s} />
-          ))}
+          {[{ label: "Total Produk", value: products.length }, { label: "Produk Aktif", value: products.filter(p => p.is_active).length }, { label: "Draft", value: products.filter(p => !p.is_active).length }].map(s => <div key={s.label} className="rounded-2xl border border-[#ececf1] bg-[#fafafa] p-6"><p className="text-[#696f96]">{s.label}</p><p className="font-ivy text-4xl text-[#544997] mt-3">{s.value}</p></div>)}
         </div>
 
         {/* products table */}
         <div className="bg-[#fafafa] border border-[#ececf1] rounded-[16px] overflow-hidden">
           <div className="flex items-center justify-between px-[20px] lg:px-[24px] py-[18px]">
-            <p className="font-semibold text-[#1d211d] text-[17px]">Recent Floral Orders</p>
-            <a href="#" className="group flex items-center gap-[6px] text-[#8b8f99] text-[14px] transition-colors hover:text-[#544997]">
-              View All (38 orders)
-              <IconArrowRight className="size-[15px] transition-transform duration-300 group-hover:translate-x-1" />
-            </a>
+            <p className="font-semibold text-[#1d211d] text-[17px]">Daftar Produk</p>
+            <span className="text-sm text-[#696f96]">{products.length} produk</span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[860px] text-left">
@@ -53,39 +44,35 @@ export default function AdminProducts() {
                   <th className="font-medium px-[12px] py-[12px]">Harga katalog</th>
                   <th className="font-medium px-[12px] py-[12px]">Kategori &amp; Dimensi</th>
                   <th className="font-medium px-[12px] py-[12px]">Stok Produk</th>
-                  <th className="font-medium px-[12px] py-[12px]">Pembaruan</th>
+                  <th className="font-medium px-[12px] py-[12px]">Status</th>
                   <th className="font-medium px-[16px] py-[12px] w-[48px]" />
                 </tr>
               </thead>
               <tbody>
-                {productRows.map((p, i) => (
-                  <tr key={i} className="border-t border-[#eef0f3] transition-colors hover:bg-white">
+                {!products.length && <tr><td colSpan={6} className="p-8 text-center text-[#696f96]">Belum ada produk. Klik Tambah Produk untuk mulai.</td></tr>}
+                {products.map((p) => (
+                  <tr key={p.id} className="border-t border-[#eef0f3] transition-colors hover:bg-white">
                     <td className="px-[24px] py-[13px]">
                       <div className="flex items-center gap-[12px]">
                         <span className="size-[38px] rounded-[8px] overflow-hidden bg-[#efeef4] shrink-0">
-                          <img alt="" src={p.img} className="size-full object-cover" />
+                          <img alt="" src={p.image_url} className="size-full object-cover" />
                         </span>
                         <span className="text-[#3f425a] text-[14px] font-medium whitespace-nowrap">{p.name}</span>
                       </div>
                     </td>
-                    <td className="px-[12px] py-[13px] text-[#3f425a] text-[14px] whitespace-nowrap">{p.price}</td>
+                    <td className="px-[12px] py-[13px] text-[#3f425a] text-[14px] whitespace-nowrap">{formatPrice(p.price)}</td>
                     <td className="px-[12px] py-[13px]">
                       <div className="flex items-center gap-[10px]">
                         <span className="bg-[#efeaf9] text-[#544997] text-[13px] font-medium px-[12px] py-[5px] rounded-full whitespace-nowrap">
                           {p.category}
                         </span>
-                        <span className="text-[#8b8f99] text-[13px] whitespace-nowrap">{p.size}</span>
+                        <span className="text-[#8b8f99] text-[13px] whitespace-nowrap">{p.size_cm ? `${p.size_cm} cm` : ""}</span>
                       </div>
                     </td>
                     <td className="px-[12px] py-[13px] text-[#8b8f99] text-[14px] whitespace-nowrap">{p.stock}</td>
-                    <td className="px-[12px] py-[13px] text-[#3f425a] text-[14px] whitespace-nowrap">{p.updated}</td>
+                    <td className="px-[12px] py-[13px] text-[#3f425a] text-[14px] whitespace-nowrap">{p.is_active ? "Aktif" : "Draft"}</td>
                     <td className="px-[16px] py-[13px]">
-                      <button
-                        aria-label="Aksi"
-                        className="flex items-center justify-center size-[30px] rounded-[8px] text-[#8b8f99] transition-colors hover:bg-[#eceaf6] hover:text-[#544997]"
-                      >
-                        <IconKebab className="size-[15px]" />
-                      </button>
+                      <a href={`/admin/products/${p.id}/edit`} aria-label={`Edit ${p.name}`} className="text-[#544997] underline">Edit</a>
                     </td>
                   </tr>
                 ))}

@@ -8,7 +8,7 @@ export const getProducts = cache(async (): Promise<Product[]> => {
  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
  if (!url || !key) throw new Error("Konfigurasi Supabase belum tersedia.");
  const endpoint = new URL("/rest/v1/products", url);
- endpoint.searchParams.set("select", "id,slug,name,description,price,stock,product_group,category,image_url,gallery,delivery_cities");
+ endpoint.searchParams.set("select", "*");
  endpoint.searchParams.set("is_active", "eq.true");
  endpoint.searchParams.set("order", "created_at.desc,id.asc");
  const response = await fetch(endpoint, { headers: { apikey: key }, cache: "no-store", signal: AbortSignal.timeout(15000) });
