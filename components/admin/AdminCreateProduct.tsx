@@ -11,10 +11,10 @@ import { IconUpload, IconImage, IconSave, IconGrip, IconDoc } from "@/components
 
 /* --------------------------- small building blocks --------------------------- */
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children, required = false }: { label: string; children: React.ReactNode; required?: boolean }) {
   return (
     <label className="flex flex-col gap-[8px]">
-      <span className="text-[#3f425a] text-[14px] font-medium">{label}</span>
+      <span className="text-[#3f425a] text-[14px] font-medium">{label}{required && <span className="ml-1 text-red-600">*<span className="sr-only"> wajib diisi</span></span>}</span>
       {children}
     </label>
   );
@@ -76,6 +76,8 @@ export default function AdminCreateProduct({ product }: { product?: Product }) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const submitting = useRef(false);
+  const form = useRef<HTMLFormElement>(null);
+  const categoryInput = useRef<HTMLInputElement>(null);
   async function upload(files: File[], cover: boolean) {
     if (uploading || busy) return;
     setError(""); setUploading(true);
@@ -92,6 +94,14 @@ export default function AdminCreateProduct({ product }: { product?: Product }) {
   }
   async function save(active: boolean) {
     if (submitting.current || uploading) return;
+    categoryInput.current?.setCustomValidity(tags.length ? "" : "Tambahkan minimal satu kategori dengan tombol ↵ atau Enter.");
+    if (!form.current?.reportValidity()) return;
+    if (!title.trim()) { setError("Judul produk wajib diisi."); return; }
+    if (!thumb) {
+      setError("Thumbnail Cover wajib diunggah sebelum menyimpan produk.");
+      document.getElementById("product-cover")?.focus();
+      return;
+    }
     submitting.current = true; setBusy(true); setError("");
     try {
       if (!harga.trim() || !stok.trim() || !/^\d+$/.test(harga) || !/^\d+$/.test(stok)) throw new Error("Isi harga dan stok dengan angka bulat tanpa titik.");
@@ -119,7 +129,7 @@ export default function AdminCreateProduct({ product }: { product?: Product }) {
   const previewImg = thumb ?? images[0] ?? productAsset.p8;
 
   return (
-    <main className="bg-white lg:rounded-[20px] min-h-screen lg:min-h-[calc(100vh-16px)] overflow-hidden">
+    <main className="bg-white lg:rounded-[20px] min-h-screen lg:min-h-[calc(100vh-16px)]">
       {/* topbar */}
       <div className="flex items-center gap-[14px] px-[24px] lg:px-[32px] h-[68px] border-b border-[#eef0f3]">
         <a
@@ -136,34 +146,39 @@ export default function AdminCreateProduct({ product }: { product?: Product }) {
         </p>
       </div>
 
-      <div className="px-[24px] lg:px-[32px] py-[24px] flex flex-col xl:flex-row gap-[24px]">
+      <form ref={form} onSubmit={e => e.preventDefault()} className="px-[24px] lg:px-[32px] py-[24px] flex flex-col xl:flex-row gap-[24px]">
         {/* ------------------------------ left ------------------------------ */}
         <div className="flex-1 min-w-px flex flex-col gap-[24px]">
           {/* product details */}
           <div className="bg-[#fafafa] border border-[#ececf1] rounded-[16px] p-[20px] lg:p-[24px] flex flex-col gap-[20px]">
             <p className="font-semibold text-[#1d211d] text-[16px]">Product Details</p>
+            <p className="text-sm text-[#696f96]">Kolom bertanda <span className="text-red-600">*</span> wajib diisi, termasuk saat menyimpan draft. Kolom lainnya opsional.</p>
 
+            <Field label="Judul Produk" required>
             <textarea
+              required maxLength={200}
               value={title}
               onChange={(e) => { setTitle(e.target.value); if (!product) setSlug(e.target.value.toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")); }}
               rows={2}
               placeholder="Tambahkan Judul Product…"
               className="w-full resize-none bg-[#f1f1f6] rounded-[12px] px-[22px] py-[20px] font-ivy text-[28px] leading-[1.2] text-[#3f425a] placeholder:text-[#b3aed6] outline-none transition-shadow focus:ring-2 focus:ring-[#928ac7]/40"
             />
+            </Field>
 
-            <Field label="Slug (alamat produk)"><input value={slug} onChange={e => setSlug(e.target.value)} className={inputCls} placeholder="buket-lavender" /></Field>
+            <Field label="Slug (alamat produk)" required><input required maxLength={160} pattern="[a-z0-9]+(-[a-z0-9]+)*" title="Gunakan huruf kecil, angka, dan tanda hubung." value={slug} onChange={e => setSlug(e.target.value)} className={inputCls} placeholder="buket-lavender" /></Field>
             <Field label="Kota Pengiriman (pisahkan dengan koma)"><input value={cities} onChange={e => setCities(e.target.value)} className={inputCls} placeholder="Jakarta Pusat, Bandung" /></Field>
             <Field label="Size Diameter">
               <div className="relative">
-                <input value={size} onChange={(e) => setSize(e.target.value)} className={inputCls + " pr-[52px]"} placeholder="E.g 40" />
+                <input value={size} inputMode="numeric" pattern="[0-9]+" onChange={(e) => { if (/^\d*$/.test(e.target.value)) setSize(e.target.value); }} className={inputCls + " pr-[52px]"} placeholder="E.g 40" />
                 <span className="absolute right-[16px] top-1/2 -translate-y-1/2 text-[#8b8f99] text-[14px]">CM</span>
               </div>
             </Field>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-[16px]">
-              <Field label="Jenis">
+              <Field label="Jenis" required>
                 <div className="relative">
                   <select
+                    required
                     value={jenis}
                     onChange={(e) => setJenis(e.target.value)}
                     className={inputCls + " appearance-none pr-[40px] cursor-pointer"}
@@ -175,11 +190,13 @@ export default function AdminCreateProduct({ product }: { product?: Product }) {
                   <IconChevronDown className="absolute right-[14px] top-1/2 -translate-y-1/2 size-[16px] text-[#8b8f99] pointer-events-none" />
                 </div>
               </Field>
-              <Field label="Kategori">
+              <Field label="Kategori" required>
                 <div className="relative">
                   <input
+                    ref={categoryInput}
+                    aria-required={tags.length === 0}
                     value={tagInput}
-                    onChange={(e) => setTagInput(e.target.value)}
+                    onChange={(e) => { setTagInput(e.target.value); e.target.setCustomValidity(""); }}
                     onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addTag())}
                     className={inputCls + " pr-[44px]"}
                     placeholder="Buket Bungan Balon"
@@ -215,8 +232,9 @@ export default function AdminCreateProduct({ product }: { product?: Product }) {
             )}
 
             {/* thumbnail */}
-            <Field label="Thumbnail Cover">
+            <Field label="Thumbnail Cover" required>
               <button
+                id="product-cover"
                 type="button"
                 onClick={() => thumbInput.current?.click()}
                 className="group relative w-full overflow-hidden rounded-[12px] border border-dashed border-[#cbc7e0] bg-[#f7f7fb] transition-colors hover:border-[#928ac7] hover:bg-[#f1eff9]"
@@ -300,14 +318,15 @@ export default function AdminCreateProduct({ product }: { product?: Product }) {
         {/* ------------------------------ right ------------------------------ */}
         <div className="w-full xl:w-[330px] shrink-0 flex flex-col gap-[20px]">
           {/* pricing */}
-          <div className="bg-[#fafafa] border border-[#ececf1] rounded-[16px] p-[20px] flex flex-col gap-[16px]">
+          <div className="xl:flex-1">
+          <div className="xl:sticky xl:top-4 bg-[#fafafa] border border-[#ececf1] rounded-[16px] p-[20px] flex flex-col gap-[16px]">
             <p className="font-semibold text-[#1d211d] text-[16px]">Pricing &amp; Stok</p>
-            <Field label="Stok">
-              <input value={stok} onChange={(e) => setStok(e.target.value)} className={inputCls} placeholder="e.g 200" inputMode="numeric" />
+            <Field label="Stok" required>
+              <input required pattern="[0-9]+" value={stok} onChange={(e) => { if (/^\d*$/.test(e.target.value)) setStok(e.target.value); }} className={inputCls} placeholder="e.g 200" inputMode="numeric" />
             </Field>
-            <Field label="Harga">
+            <Field label="Harga" required>
               <div className="relative">
-                <input value={harga} onChange={(e) => setHarga(e.target.value)} className={inputCls + " pr-[44px]"} placeholder="0.00" inputMode="numeric" />
+                <input required pattern="[0-9]+" value={harga} onChange={(e) => { if (/^\d*$/.test(e.target.value)) setHarga(e.target.value); }} className={inputCls + " pr-[44px]"} placeholder="250000" inputMode="numeric" />
                 <span className="absolute right-[16px] top-1/2 -translate-y-1/2 text-[#8b8f99] text-[14px]">Rp</span>
               </div>
             </Field>
@@ -318,6 +337,7 @@ export default function AdminCreateProduct({ product }: { product?: Product }) {
                 <span className="text-[#544997] text-[15px] font-bold">{priceLabel}</span>
               </div>
             </div>
+          </div>
           </div>
 
           {/* preview card */}
@@ -354,7 +374,7 @@ export default function AdminCreateProduct({ product }: { product?: Product }) {
             </button>
           </div>
         </div>
-      </div>
+      </form>
     </main>
   );
 }
