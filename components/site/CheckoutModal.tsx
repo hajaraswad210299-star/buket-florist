@@ -16,9 +16,26 @@ const inputCls =
 
 export default function CheckoutModal({ open, onClose, product, qty }: Props) {
   const [note, setNote] = useState("");
+  const [city, setCity] = useState("");
+  const [address, setAddress] = useState("");
   const [deliveryTime, setDeliveryTime] = useState("");
   const [render, setRender] = useState(open);
   const [show, setShow] = useState(false);
+  const deliveryLabel = deliveryTime
+    ? `${new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Jakarta" }).format(new Date(`${deliveryTime}:00+07:00`))} WIB`
+    : "Belum dipilih";
+  const orderMessage = [
+    "Halo Sekar Wangi, saya ingin memesan:",
+    `Produk: ${product.name}`,
+    `Harga satuan: ${product.price}`,
+    `Jumlah: ${qty}`,
+    `Kota tujuan: ${city.trim() || "Belum diisi"}`,
+    `Alamat tujuan: ${address.trim() || "Belum diisi"}`,
+    `Waktu pengantaran: ${deliveryLabel}`,
+    ...(note.trim() ? [`Ucapan: ${note.trim()}`] : []),
+    "Mohon konfirmasi ketersediaan, ongkir, dan total pembayaran. Terima kasih.",
+  ].join("\n");
+  const whatsappUrl = `https://wa.me/6285641723138?text=${encodeURIComponent(orderMessage)}`;
 
   // mount/unmount with enter/leave animation
   useEffect(() => {
@@ -86,10 +103,10 @@ export default function CheckoutModal({ open, onClose, product, qty }: Props) {
             <p className="font-medium text-[#3f425a] text-[17px]">Informasi Pengiriman</p>
 
             <div className="relative">
-              <input className={inputCls + " pr-[44px]"} placeholder="Kirim Ke Kota Mana?" />
+              <input className={inputCls + " pr-[44px]"} placeholder="Kirim Ke Kota Mana?" aria-label="Kota tujuan" value={city} onChange={event => setCity(event.target.value)} />
               <IconSearch className="absolute right-[14px] top-1/2 -translate-y-1/2 size-[18px] text-[#a5a8c0]" />
             </div>
-            <input className={inputCls} placeholder="Masukkan Alamat Lengkap Tujuan." />
+            <input className={inputCls} placeholder="Masukkan Alamat Lengkap Tujuan." aria-label="Alamat tujuan" value={address} onChange={event => setAddress(event.target.value)} />
             <DeliveryTimePicker value={deliveryTime} onChange={setDeliveryTime} />
 
             <p className="font-medium text-[#3f425a] text-[15px] mt-[4px]">Ucapan</p>
@@ -128,12 +145,14 @@ export default function CheckoutModal({ open, onClose, product, qty }: Props) {
 
         {/* footer */}
         <div className="px-[24px] sm:px-[28px] pb-[24px] sm:pb-[28px]">
-          <button
-            type="button"
+          <a
+            href={whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
             className="group w-full bg-[#544997] flex items-center justify-center h-[54px] rounded-[8px] transition-colors hover:bg-[#443a86]"
           >
             <span className="font-medium text-white text-[16px]">Pesan Sekarang</span>
-          </button>
+          </a>
         </div>
       </div>
     </div>
