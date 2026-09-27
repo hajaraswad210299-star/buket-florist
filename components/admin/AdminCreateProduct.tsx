@@ -316,10 +316,10 @@ export default function AdminCreateProduct({ product }: { product?: Product }) {
         </div>
 
         {/* ------------------------------ right ------------------------------ */}
-        <div className="w-full xl:w-[330px] shrink-0 flex flex-col gap-[20px]">
+        <div className="w-full xl:w-[330px] shrink-0 flex flex-col gap-[20px] xl:sticky xl:top-4 xl:self-start xl:max-h-[calc(100dvh-32px)]">
+          <div className="flex flex-col gap-[20px] [&>*]:shrink-0 xl:min-h-0 xl:overflow-y-auto xl:[scrollbar-width:thin]">
           {/* pricing */}
-          <div className="xl:flex-1">
-          <div className="xl:sticky xl:top-4 bg-[#fafafa] border border-[#ececf1] rounded-[16px] p-[20px] flex flex-col gap-[16px]">
+          <div className="bg-[#fafafa] border border-[#ececf1] rounded-[16px] p-[20px] flex flex-col gap-[16px]">
             <p className="font-semibold text-[#1d211d] text-[16px]">Pricing &amp; Stok</p>
             <Field label="Stok" required>
               <input required pattern="[0-9]+" value={stok} onChange={(e) => { if (/^\d*$/.test(e.target.value)) setStok(e.target.value); }} className={inputCls} placeholder="e.g 200" inputMode="numeric" />
@@ -337,7 +337,6 @@ export default function AdminCreateProduct({ product }: { product?: Product }) {
                 <span className="text-[#544997] text-[15px] font-bold">{priceLabel}</span>
               </div>
             </div>
-          </div>
           </div>
 
           {/* preview card */}
@@ -357,8 +356,9 @@ export default function AdminCreateProduct({ product }: { product?: Product }) {
           {error && <p role="alert" className="rounded-lg bg-red-50 p-4 text-red-700">{error}</p>}
           {(busy || uploading) && <p role="status">{uploading ? "Mengunggah gambar..." : "Menyimpan produk..."}</p>}
           <p className="text-sm text-[#696f96]">Kategori pertama menjadi kategori utama. Draft tidak tampil di katalog.</p>
+          </div>
           {/* actions */}
-          <div className="flex items-center gap-[12px]">
+          <div className="flex shrink-0 items-center gap-[12px]">
             <button type="button" disabled={busy || uploading} onClick={() => save(false)} className="disabled:opacity-50 group flex-1 flex items-center justify-center gap-[8px] h-[48px] rounded-[10px] border border-[#e1e2ea] text-[#3f425a] text-[14px] font-medium transition-colors hover:bg-[#f2f3f7]">
               Save as Draft
               <IconSave className="size-[17px] text-[#8b8f99] transition-colors group-hover:text-[#544997]" />
