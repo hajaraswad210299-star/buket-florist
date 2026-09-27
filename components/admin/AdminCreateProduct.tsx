@@ -3,7 +3,8 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Product } from "@/lib/products";
-import { saveProduct, uploadProductImage } from "@/app/admin/actions";
+import { uploadProductImage } from "@/app/admin/actions";
+import { saveAdminProduct } from "@/lib/admin-save-client";
 import { productAsset } from "@/components/figmaAssets";
 import { IconArrowLeft, IconChevronDown } from "@/components/site/icons";
 import { IconUpload, IconImage, IconSave, IconGrip, IconDoc } from "@/components/admin/icons";
@@ -94,13 +95,12 @@ export default function AdminCreateProduct({ product }: { product?: Product }) {
     submitting.current = true; setBusy(true); setError("");
     try {
       if (!harga.trim() || !stok.trim() || !/^\d+$/.test(harga) || !/^\d+$/.test(stok)) throw new Error("Isi harga dan stok dengan angka bulat tanpa titik.");
-      const result = await saveProduct(product?.id ?? null, {
+      await saveAdminProduct(product?.id ?? null, {
         name: title, slug, product_group: jenis, category: tags[0] ?? "", tags,
         size_cm: size ? Number(size) : null, price: Number(harga), stock: Number(stok),
         image_url: thumb ?? "", gallery: images, delivery_cities: cities.split(",").map(v => v.trim()).filter(Boolean),
         description: sections[0].body, content_sections: sections, is_active: active,
       });
-      if (!result.ok) throw new Error(result.error);
       router.push("/admin/products?saved=1"); router.refresh();
     } catch (e) { setError(e instanceof Error ? e.message : "Produk gagal disimpan."); }
     finally { submitting.current = false; setBusy(false); }
